@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes>
+    <!-- 主路节点 -->
+    <node id="n1" x="0.00" y="0.00" type="priority"/>
+    <node id="j1" x="250.00" y="0.00" type="priority"/>
+    <node id="j2" x="400.00" y="0.00" type="priority"/>
+    <node id="n2" x="650.00" y="0.00" type="priority"/>
+
+    <!-- Ramp 起点 -->
+    <node id="ramp_start" x="150.00" y="100.00" type="priority"/>
+</nodes>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes>
+    <!-- standard_2lane -->
+    <node id="n1" x="0.00" y="0.00" type="priority"/>
+    <node id="n2" x="250.00" y="0.00" type="priority"/>
+
+    <!-- on_ramp_2to3 -->
+    <node id="n3" x="500.00" y="0.00" type="priority"/>
+    <node id="ramp1" x="400.00" y="100.00" type="priority"/>
+
+    <!-- standard_3lane -->
+    <node id="n4" x="750.00" y="0.00" type="priority"/>
+    <node id="n5" x="1000.00" y="0.00" type="priority"/>
+
+    <!-- off_ramp_3to3 -->
+    <node id="n6" x="1250.00" y="0.00" type="priority"/>
+    <node id="exit1" x="1150.00" y="100.00" type="priority"/>
+</nodes>

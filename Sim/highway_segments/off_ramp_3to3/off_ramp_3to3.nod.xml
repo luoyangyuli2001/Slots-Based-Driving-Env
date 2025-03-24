@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes>
+    <node id="n1" x="0.00" y="0.00" type="priority"/>
+    <node id="j" x="250.00" y="0.00" type="priority"/>
+    <node id="n2" x="500.00" y="0.00" type="priority"/>
+    <node id="ramp_exit" x="370.00" y="100.00" type="priority"/>
+</nodes>

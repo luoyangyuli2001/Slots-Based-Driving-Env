@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edges>
+    <!-- 主路前段 -->
+    <edge id="main1" from="n1" to="j1" numLanes="3" speed="33.33"/>
+
+    <!-- 合流缓冲段（buffer zone） -->
+    <edge id="buffer_zone" from="j1" to="j2" numLanes="3" speed="33.33" shape="250.0,3.2 400.0,3.2"/>
+
+    <!-- 主路后段 -->
+    <edge id="main2" from="j2" to="n2" numLanes="3" speed="33.33" shape="400.0,3.2 650.0,3.2"/>
+
+    <!-- Ramp 合流至缓冲段入口 -->
+    <edge id="ramp" from="ramp_start" to="j1" numLanes="1" speed="22.22"/>
+</edges>

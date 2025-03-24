@@ -1,0 +1,5 @@
+__pycache__/
+.DS_Store
+
+# Jupyter 自动保存检查点
+.ipynb_checkpoints/

@@ -1,0 +1,11 @@
+
+            <configuration>
+                <input>
+                    <net-file value="joined_segments.net.xml"/>
+                </input>
+                <time>
+                    <begin value="0"/>
+                    <end value="1000"/>
+                </time>
+            </configuration>
+            

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edges>
+    <!-- 主路前段（保持 3 车道） -->
+    <edge id="main1" from="n1" to="j" numLanes="3" speed="33.33"/>
+
+    <!-- 主路后段（仍为 3 车道），Y 偏移确保 lane 对齐 -->
+    <edge id="main2" from="j" to="n2" numLanes="3" speed="33.33"/>
+
+    <!-- 匝道出口（1 车道，左分叉） -->
+    <edge id="exit" from="j" to="ramp_exit" numLanes="1" speed="22.22"/>
+</edges>

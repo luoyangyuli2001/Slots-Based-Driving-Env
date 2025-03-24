@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edges>
+    <!-- 主路前段（3车道） -->
+    <edge id="main1" from="n1" to="j" numLanes="3" speed="33.33"/>
+
+    <!-- 主路后段（4车道），偏移 3.2m 对齐前3车道 -->
+    <edge id="main2" from="j" to="n2" numLanes="4" speed="33.33" shape="250.00,3.2 500.00,3.2"/>
+
+    <!-- Ramp（斜向合流） -->
+    <edge id="ramp" from="ramp_start" to="j" numLanes="1" speed="22.22"/>
+</edges>
