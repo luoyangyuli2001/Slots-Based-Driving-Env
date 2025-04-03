@@ -1,4 +1,5 @@
 # Sumo/sumo_netxml_parser.py
+
 import os
 import sys
 import xml.etree.ElementTree as ET
@@ -36,11 +37,12 @@ def is_internal_edge(edge_element):
 
 def parse_netxml(netxml_path):
     """
-    解析 .net.xml 文件，构建 Segment 和 Lane 实体对象
+    解析 .net.xml 文件，构建 Segment 和 Lane 实体对象，并基于 index 设置 next_lane
     """
     tree = ET.parse(netxml_path)
     root = tree.getroot()
     segments = []
+    lane_dict = {}
 
     for edge in root.findall("edge"):
         if is_internal_edge(edge):
@@ -65,6 +67,7 @@ def parse_netxml(netxml_path):
                 shape=[tuple(map(float, p.split(','))) for p in lane_elem.get("shape", "").strip().split()]
             )
             lanes.append(lane)
+            lane_dict[lane.id] = lane
 
         # 构建 Segment 对象
         segment = Segment(
@@ -76,9 +79,34 @@ def parse_netxml(netxml_path):
         )
 
         for lane in lanes:
+            lane.segment_id = segment.id
             segment.add_lane(lane)
 
         segments.append(segment)
+
+    # ✅ 使用 index 基于 segment 顺序构建 next_lane 显式连接关系
+    segment_dict = {seg.id: seg for seg in segments}
+
+    for i in range(len(segments) - 1):
+        curr_seg = segments[i]
+        next_seg = segments[i + 1]
+
+        if curr_seg.segment_type != "standard" or next_seg.segment_type != "standard":
+            continue
+
+        n1 = len(curr_seg.lanes)
+        n2 = len(next_seg.lanes)
+
+        for curr_lane in curr_seg.lanes:
+            i1 = curr_lane.index
+            offset = n2 - n1
+            i2 = i1 + offset
+
+            if 0 <= i2 < n2:
+                for next_lane in next_seg.lanes:
+                    if next_lane.index == i2:
+                        curr_lane.next_lane = next_lane
+                        break
 
     return segments
 
@@ -89,6 +117,7 @@ if __name__ == "__main__":
 
     print(f"共解析出 {len(segments)} 个 Segment:")
     for seg in segments:
-        print(seg)
+        print(f"[SEGMENT] {seg.id} ({seg.segment_type})")
         for lane in seg.lanes:
-            print("   ", lane)
+            next_id = lane.next_lane.id if lane.next_lane else "None"
+            print(f"   [LANE] {lane.id} -> next_lane: {next_id}")
