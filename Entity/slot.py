@@ -7,6 +7,7 @@ class Slot:
                  lane_id,
                  index,
                  position_start,
+                 speed,
                  length=8.0,
                  gap_to_previous=3.0,
                  occupied=False,
@@ -20,6 +21,7 @@ class Slot:
         self.position_start = position_start    # 起点
         self.length = length                    # Slot 长度，默认 8m
         self.gap_to_previous = gap_to_previous  # 与前 slot 间隔，默认 3m
+        self.speed = speed
 
         # === 派生计算 ===
         self.position_end = self.position_start + self.length

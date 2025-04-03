@@ -56,7 +56,8 @@ def generate_slots_for_lane(lane, starting_index=0, slot_length=8.0, slot_gap=3.
             index=global_index,
             position_start=start_pos,
             length=slot_length,
-            gap_to_previous=slot_gap
+            gap_to_previous=slot_gap,
+            speed=lane.speed
         )
         slot.center = interpolate_position_from_shape(shape, slot.center)
         slots.append(slot)
