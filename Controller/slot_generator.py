@@ -52,7 +52,7 @@ def generate_slots_for_lane(lane, starting_index=0, slot_length=8.0, slot_gap=3.
         slot = Slot(
             id=slot_id,
             segment_id=lane.segment_id,
-            lane_id=lane.id,
+            lane=lane,
             index=global_index,
             position_start=start_pos,
             length=slot_length,

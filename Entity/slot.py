@@ -4,7 +4,7 @@ class Slot:
     def __init__(self,
                  id,
                  segment_id,
-                 lane_id,
+                 lane,
                  index,
                  position_start,
                  speed,
@@ -15,7 +15,7 @@ class Slot:
         
         self.id = id                            # Slot 唯一标识
         self.segment_id = segment_id            # 所属 segment ID
-        self.lane_id = lane_id                  # 所属 lane ID
+        self.lane = lane                        # 所属 lane 
         self.index = index                      # 在 lane 上的序号
         
         self.position_start = position_start    # 起点
