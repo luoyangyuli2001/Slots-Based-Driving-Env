@@ -115,6 +115,7 @@ def parse_netxml(netxml_path):
             if lane.next_lane:
                 next_lane_ids.add(lane.next_lane.id)
 
+    entry_lanes = []
     # 标记 entry lane（仅主干道参与）
     for seg in segments:
         if seg.segment_type != "standard":
@@ -122,6 +123,19 @@ def parse_netxml(netxml_path):
         for lane in seg.lanes:
             if lane.id not in next_lane_ids:
                 lane.is_entry = True
+                entry_lanes.append(lane)
+
+    # 从每个 entry lane 出发，标记对应完整链末尾
+    for entry in entry_lanes:
+        current = entry
+        visited = set()
+        while current and current.id not in visited:
+            visited.add(current.id)
+            if not current.next_lane:
+                current.is_end = True
+                current.entry_ref = entry
+                break
+            current = current.next_lane
 
     return segments
 
@@ -136,4 +150,6 @@ if __name__ == "__main__":
         for lane in seg.lanes:
             next_id = lane.next_lane.id if lane.next_lane else "None"
             print(f"   [LANE] {lane.id} -> next_lane: {next_id}")
-            print(f"   [LANE] {lane.id} is entry? {lane.is_entry}")        
+            print(f"   [LANE] {lane.id} is entry? {lane.is_entry}")
+            print(f"   [LANE] {lane.id} is end? {lane.is_end}")
+            print(f"   [LANE] {lane.id} is entry -> {lane.entry_ref}")

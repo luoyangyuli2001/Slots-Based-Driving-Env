@@ -13,6 +13,7 @@ sys.path.append(project_root)
 
 
 from Entity.slot import Slot
+from Controller.slot_generator import generate_single_slot_on_lane
 
 class SlotController:
     def __init__(self, slots: List[Slot], time_step: float = 0.1):
@@ -22,10 +23,13 @@ class SlotController:
         """
         self.slots = slots
         self.time_step = time_step  # 默认每个 step 模拟 1 秒
+        self.slot_length = 8.0      # 默认slot 长度为8
+        self.slot_gap = 3.0         # 默认slot gap为3
 
     def step(self):
         # 存储需要保留的 slot
         new_slots = []
+        respawn_lanes = []
 
         for slot in self.slots:
             distance = slot.speed * self.time_step
@@ -33,8 +37,12 @@ class SlotController:
             slot.position_end += distance
 
             # 情况一：slot 已到达末尾且无 next_lane → 回收
+            # slot 到达末端且没有下一个 lane，不添加进new_slots, 即移除 ,并准备 respawn
             if not slot.lane.next_lane and slot.position_start >= slot.lane.length:
-                continue  # 不加入 new_slots，相当于删除
+                if slot.lane.is_end and slot.lane.entry_ref:
+                    respawn_lanes.append(slot.lane.entry_ref)
+                continue
+
             # 情况二：slot 可进入下一个 lane
             elif slot.position_start >= slot.lane.length and slot.lane.next_lane:
                 slot.lane = slot.lane.next_lane
@@ -47,6 +55,14 @@ class SlotController:
 
         self.slots = new_slots  # 更新 slot 列表
 
+        # 执行 slot 再生
+        for lane in respawn_lanes:
+            new_slot = generate_single_slot_on_lane(
+                lane=lane,
+                slot_length=self.slot_length,
+                slot_gap=self.slot_gap
+            )
+            self.slots.append(new_slot)
 
     def update_center_by_lane_shape(self, lane_shape_lookup):
         """

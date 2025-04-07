@@ -16,6 +16,7 @@ SUMO_BINARY = "sumo-gui"
 CFG_FILE = os.path.join("Sim", "temp.sumocfg")
 NET_FILE = os.path.join("Sim", "joined_segments.net.xml")
 
+global_index = 0
 
 def interpolate_position_from_shape(shape, target_distance):
     accumulated = 0.0
@@ -36,8 +37,24 @@ def interpolate_position_from_shape(shape, target_distance):
 
     return shape[-1]
 
+def generate_single_slot_on_lane(lane, slot_length=8.0, slot_gap=3.0):
+    global global_index
+    slot_id = f"slot_{global_index}"
+    global_index += 1
+    return Slot(
+        id=slot_id,
+        lane=lane,
+        index=-1,
+        position_start=0.0,
+        length=slot_length,
+        gap_to_previous=slot_gap,
+        segment_id=lane.segment_id,
+        speed=lane.speed
+    )
 
-def generate_slots_for_lane(lane, starting_index=0, slot_length=8.0, slot_gap=3.0):
+
+def generate_slots_for_lane(lane, slot_length=8.0, slot_gap=3.0):
+    global global_index
     slots = []
     lane_length = lane.length
     step = slot_length + slot_gap
@@ -45,7 +62,7 @@ def generate_slots_for_lane(lane, starting_index=0, slot_length=8.0, slot_gap=3.
     shape = traci.lane.getShape(lane.id)
 
     for i in range(num_slots):
-        global_index = starting_index + i
+        global_index += 1
         start_pos = i * step
         slot_id = f"slot_{global_index}"
 
@@ -67,7 +84,6 @@ def generate_slots_for_lane(lane, starting_index=0, slot_length=8.0, slot_gap=3.
 
 def generate_slots_for_all_segments(segments, slot_length=8.0, slot_gap=3.0):
     all_slots = []
-    global_index = 0
 
     for segment in segments:
         if segment.segment_type != "standard":
@@ -78,12 +94,11 @@ def generate_slots_for_all_segments(segments, slot_length=8.0, slot_gap=3.0):
             lane.segment_id = segment.id
             lane_slots = generate_slots_for_lane(
                 lane,
-                starting_index=global_index,
                 slot_length=slot_length,
                 slot_gap=slot_gap
             )
             segment_slots.extend(lane_slots)
-            global_index += len(lane_slots)
+
 
         segment.slots = segment_slots
         all_slots.extend(segment_slots)

@@ -35,6 +35,8 @@ if __name__ == "__main__":
     }
     slot_controller.update_center_by_lane_shape(lane_shape_lookup)
 
+    # 初始化 POI
+    existing_slot_ids = set()
     for slot in all_slots:
         if slot.center:
             x, y = slot.center
@@ -42,33 +44,44 @@ if __name__ == "__main__":
             traci.poi.setParameter(slot.id, "label", slot.id)
             traci.poi.setParameter(slot.id, "imgWidth", "5")
             traci.poi.setParameter(slot.id, "imgHeight", "5")
-
+            existing_slot_ids.add(slot.id)
+    
     print("[TEST] 启动 slot 动态流动模拟...")
     for step in range(1000):
         traci.simulationStep()
 
         # Step slots
-        prev_slot_ids = set(slot.id for slot in slot_controller.slots)
         slot_controller.step()
         slot_controller.update_center_by_lane_shape(lane_shape_lookup)
-        current_slot_ids = set(slot.id for slot in slot_controller.slots)
 
-        # 更新存活 slot 的 POI 位置
         for slot in slot_controller.slots:
-            if slot.center:
-                x, y = slot.center
+            if not slot.center:
+                continue
+            x, y = slot.center
+            if slot.id in existing_slot_ids:
                 try:
                     traci.poi.setPosition(slot.id, x, y)
                 except:
                     pass
+            else:
+                try:
+                    traci.poi.add(slot.id, x, y, color=(255, 0, 0))
+                    traci.poi.setParameter(slot.id, "label", slot.id)
+                    traci.poi.setParameter(slot.id, "imgWidth", "5")
+                    traci.poi.setParameter(slot.id, "imgHeight", "5")
+                    existing_slot_ids.add(slot.id)
+                except:
+                    pass
 
-        # 删除被移除 slot 的 POI
-        disappeared_ids = prev_slot_ids - current_slot_ids
-        for sid in disappeared_ids:
+        # ✅ 清理已消失的 POI
+        current_ids = set(slot.id for slot in slot_controller.slots)
+        removed_ids = existing_slot_ids - current_ids
+        for rid in removed_ids:
             try:
-                traci.poi.remove(sid)
+                traci.poi.remove(rid)
             except:
                 pass
+        existing_slot_ids = current_ids
 
     traci.close()
     print("[TEST] 流动测试结束。")
