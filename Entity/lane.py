@@ -16,6 +16,7 @@ class Lane:
         self.segment_id = None            # 所属 segment ID，可在解析时赋值
 
         self.next_lane = None             # 后继车道对象（单一引用）
+        self.is_entry = False             # 标记为Slot生成起始路段
 
     def __repr__(self):
-        return f"Lane(id={self.id}, index={self.index}, speed={self.speed}, length={self.length})"
+        return f"Lane(id={self.id}, index={self.index}, speed={self.speed}, length={self.length}, next_lane={self.next_lane}, is_entry={self.is_entry})"
