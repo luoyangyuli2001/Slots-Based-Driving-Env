@@ -40,7 +40,7 @@ if __name__ == "__main__":
     for slot in all_slots:
         if slot.center:
             x, y = slot.center
-            traci.poi.add(slot.id, x, y, color=(255, 0, 0))
+            traci.poi.add(slot.id, x, y, color=(255, 0, 0), layer=5)
             traci.poi.setParameter(slot.id, "label", slot.id)
             traci.poi.setParameter(slot.id, "imgWidth", "5")
             traci.poi.setParameter(slot.id, "imgHeight", "5")
@@ -65,7 +65,7 @@ if __name__ == "__main__":
                     pass
             else:
                 try:
-                    traci.poi.add(slot.id, x, y, color=(255, 0, 0))
+                    traci.poi.add(slot.id, x, y, color=(255, 0, 0), layer=5)
                     traci.poi.setParameter(slot.id, "label", slot.id)
                     traci.poi.setParameter(slot.id, "imgWidth", "5")
                     traci.poi.setParameter(slot.id, "imgHeight", "5")
