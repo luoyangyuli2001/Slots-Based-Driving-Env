@@ -47,17 +47,28 @@ if __name__ == "__main__":
     for step in range(1000):
         traci.simulationStep()
 
-        # 每 step 更新 slot 状态并刷新可视化位置
+        # Step slots
+        prev_slot_ids = set(slot.id for slot in slot_controller.slots)
         slot_controller.step()
         slot_controller.update_center_by_lane_shape(lane_shape_lookup)
+        current_slot_ids = set(slot.id for slot in slot_controller.slots)
 
-        for slot in all_slots:
+        # 更新存活 slot 的 POI 位置
+        for slot in slot_controller.slots:
             if slot.center:
                 x, y = slot.center
                 try:
                     traci.poi.setPosition(slot.id, x, y)
                 except:
                     pass
+
+        # 删除被移除 slot 的 POI
+        disappeared_ids = prev_slot_ids - current_slot_ids
+        for sid in disappeared_ids:
+            try:
+                traci.poi.remove(sid)
+            except:
+                pass
 
     traci.close()
     print("[TEST] 流动测试结束。")

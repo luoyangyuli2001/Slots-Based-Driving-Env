@@ -24,26 +24,28 @@ class SlotController:
         self.time_step = time_step  # 默认每个 step 模拟 1 秒
 
     def step(self):
+        # 存储需要保留的 slot
+        new_slots = []
+
         for slot in self.slots:
             distance = slot.speed * self.time_step
             slot.position_start += distance
             slot.position_end += distance
 
-            # if slot.center is not None:
-            #     slot.center = (
-            #         slot.center[0],  # 当前简化，不修改 x
-            #         slot.center[1]   # 同上，不修改 y
-            #     )
+            # 情况一：slot 已到达末尾且无 next_lane → 回收
+            if not slot.lane.next_lane and slot.position_start >= slot.lane.length:
+                continue  # 不加入 new_slots，相当于删除
+            # 情况二：slot 可进入下一个 lane
+            elif slot.position_start >= slot.lane.length and slot.lane.next_lane:
+                slot.lane = slot.lane.next_lane
+                slot.position_start = 0.0
+                slot.position_end = slot.length
+                slot.center = None
+                new_slots.append(slot)
+            else:
+                new_slots.append(slot)
 
-            if slot.position_start >= slot.lane.length:
-                if slot.lane.next_lane:
-                    slot.lane = slot.lane.next_lane
-                    slot.position_start = 0.0
-                    slot.position_end = slot.length
-                    slot.center = None  # 等待下帧插值更新
-                else:
-                    # 暂不处理末端 slot（可清除或重生）
-                    continue
+        self.slots = new_slots  # 更新 slot 列表
 
 
     def update_center_by_lane_shape(self, lane_shape_lookup):
