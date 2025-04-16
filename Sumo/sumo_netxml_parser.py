@@ -11,6 +11,7 @@ sys.path.append(project_root)
 
 from Entity.segment import Segment
 from Entity.lane import Lane
+from Entity.fulllane import FullLane
 
 
 def classify_segment(edge_id):
@@ -44,6 +45,7 @@ def parse_netxml(netxml_path):
     segments = []
     lane_dict = {}
 
+    # === Step 1: 解析所有 edge 与 lane，构建 Segment 与 Lane 实体 ===
     for edge in root.findall("edge"):
         if is_internal_edge(edge):
             continue
@@ -84,6 +86,7 @@ def parse_netxml(netxml_path):
 
         segments.append(segment)
 
+    # === Step 2: 构建 lane.next_lane 引用（右舵左行 lane 对齐）===
     # ✅ 使用 index 基于 segment 顺序构建 next_lane 显式连接关系
     segment_dict = {seg.id: seg for seg in segments}
 
@@ -108,7 +111,9 @@ def parse_netxml(netxml_path):
                         curr_lane.next_lane = next_lane
                         break
 
-    # 构建所有被引用为 next_lane 的 lane_id 集合
+    # === Step 3: 标记 entry_lane / end_lane，并建立 entry_ref ===
+    # 构建所有被引用为 next_lane 的 lane_id 集合, 用于下一步标记 entry lane 
+    # 没有被其他lane标记为next_lane的就是entry lane
     next_lane_ids = set()
     for seg in segments:
         for lane in seg.lanes:
@@ -125,7 +130,7 @@ def parse_netxml(netxml_path):
                 lane.is_entry = True
                 entry_lanes.append(lane)
 
-    # 从每个 entry lane 出发，标记对应完整链末尾
+    # 从每个 entry lane 出发, 寻找对应的 end lane. 并分别标记entry与end
     for entry in entry_lanes:
         current = entry
         visited = set()
@@ -137,12 +142,31 @@ def parse_netxml(netxml_path):
                 break
             current = current.next_lane
 
-    return segments
+    # === Step 4: 构建 FullLane 实体列表 ===
+    full_lanes = []
+    full_lane_index = 0
+
+    for lane in lane_dict.values():
+        if getattr(lane, "is_entry", False):
+            full_lane = FullLane(id=f"full_{full_lane_index}")
+            full_lane_index += 1
+
+            current = lane
+            while current:
+                full_lane.add_lane(current)
+                current.full_lane = full_lane
+                if getattr(current, "is_end", False):
+                    break
+                current = current.next_lane
+
+            full_lanes.append(full_lane)
+
+    return segments, full_lanes
 
 # 测试入口
 if __name__ == "__main__":
     net_path = "Sim/joined_segments.net.xml"
-    segments = parse_netxml(net_path)
+    segments, full_lanes = parse_netxml(net_path)
 
     print(f"共解析出 {len(segments)} 个 Segment:")
     for seg in segments:
@@ -153,3 +177,7 @@ if __name__ == "__main__":
             print(f"   [LANE] {lane.id} is entry? {lane.is_entry}")
             print(f"   [LANE] {lane.id} is end? {lane.is_end}")
             print(f"   [LANE] {lane.id} is entry -> {lane.entry_ref}")
+
+    print(f"\n共构建 {len(full_lanes)} 条 FullLane:")
+    for fl in full_lanes:
+        print(fl)
