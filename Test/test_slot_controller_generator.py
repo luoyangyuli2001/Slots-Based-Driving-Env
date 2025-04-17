@@ -11,7 +11,10 @@ sys.path.append(project_root)
 
 from Sumo.sumo_netxml_parser import parse_netxml
 from Tools.utils import generate_temp_cfg
-from Controller.slot_generator import generate_slots_for_all_full_lanes, generate_single_slot_on_full_lane
+from Controller.slot_generator import (
+    generate_slots_for_all_full_lanes, 
+    generate_single_slot_on_full_lane
+)
 from Controller.slot_controller import SlotController
 
 # SUMO Configuration
@@ -30,6 +33,9 @@ if __name__ == "__main__":
     generate_slots_for_all_full_lanes(full_lanes)
     slot_controller = SlotController(full_lanes)
 
+    # 初始化渲染已添加的 slot 集合
+    rendered_slots = set()
+
     # 可视化初始 slot
     for fl in full_lanes:
         for slot in fl.slots:
@@ -40,6 +46,7 @@ if __name__ == "__main__":
                     traci.poi.setParameter(slot.id, "label", slot.id)
                     traci.poi.setParameter(slot.id, "imgWidth", "5")
                     traci.poi.setParameter(slot.id, "imgHeight", "5")
+                    rendered_slots.add(slot.id)
                 except Exception as e:
                     print(f"[WARN] 初始 slot {slot.id} 添加失败：{e}")
 
@@ -47,37 +54,36 @@ if __name__ == "__main__":
     for step in range(1000):
         traci.simulationStep()
 
-        # 推进一帧，并获取被移除的 slot
+        # 推进 slot 并获取移除项
         removed = slot_controller.step()
         slot_controller.update_center_by_shape()
 
-        # 刷新 slot 位置
+        # 更新现有 slot 坐标或添加新 slot
         for fl in full_lanes:
             for slot in fl.slots:
                 if slot.center:
-                    try:
-                        traci.poi.setPosition(slot.id, *slot.center)
-                    except:
-                        pass
+                    if slot.id in rendered_slots:
+                        try:
+                            traci.poi.setPosition(slot.id, *slot.center)
+                        except:
+                            pass
+                    else:
+                        try:
+                            traci.poi.add(slot.id, *slot.center, color=(255, 0, 0), layer=5)
+                            traci.poi.setParameter(slot.id, "label", slot.id)
+                            traci.poi.setParameter(slot.id, "imgWidth", "5")
+                            traci.poi.setParameter(slot.id, "imgHeight", "5")
+                            rendered_slots.add(slot.id)
+                        except Exception as e:
+                            print(f"[WARN] 新 slot {slot.id} 添加失败: {e}")
 
-        # slot 再生：从末尾移除，从起点补充
+        # 移除并补充 slot
         for old_slot, full_lane in removed:
             try:
                 traci.poi.remove(old_slot.id)
+                rendered_slots.discard(old_slot.id)
             except:
                 pass
-
-            new_slot = generate_single_slot_on_full_lane(full_lane)
-            full_lane.slots.append(new_slot)
-
-            if new_slot.center:
-                try:
-                    traci.poi.add(new_slot.id, *new_slot.center, color=(255, 0, 0), layer=5)
-                    traci.poi.setParameter(new_slot.id, "label", new_slot.id)
-                    traci.poi.setParameter(new_slot.id, "imgWidth", "5")
-                    traci.poi.setParameter(new_slot.id, "imgHeight", "5")
-                except Exception as e:
-                    print(f"[WARN] 新 slot {new_slot.id} 添加失败：{e}")
 
     traci.close()
     print("[TEST] 流动测试结束。")

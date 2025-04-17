@@ -4,7 +4,7 @@
 import math
 import os
 import sys
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 # === 设置路径 ===
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,30 +25,31 @@ class SlotController:
         self.full_lanes = full_lanes
         self.time_step = time_step  # 默认每个 step 模拟 1 秒 0.1s
 
-    def step(self):
+    def step(self) -> List[Tuple[Slot, FullLane]]:
         """
         推进所有 slot，并返回到达末尾需要移除的 slot 及其所在 full_lane
         :return: List of (slot, full_lane) 元组
         """
-        removed = []
+        removed_slots = []
 
-        for fulllane in self.full_lanes:
-            remaining_slots = []
-            for slot in fulllane.slots:
+        for fl in self.full_lanes:
+            updated_slots = []
+            for slot in fl.slots:
                 # 推进位置
-                distance = slot.speed * self.time_step
-                slot.position_start += distance
-                slot.position_end += distance
+                slot.position_start += slot.speed * self.time_step
+                slot.position_end = slot.position_start + slot.length
 
                 # 判断是否超出 full_lane
-                if slot.position_start >= fulllane.get_total_length():
-                    removed.append((slot, fulllane))  # 移除该 slot
+                if slot.position_start >= fl.get_total_length():
+                    removed_slots.append((slot, fl))
+                    new_slot = generate_single_slot_on_full_lane(fl)
+                    updated_slots.append(new_slot)
                 else:
-                    remaining_slots.append(slot)
+                    updated_slots.append(slot)
 
-            fulllane.slots = remaining_slots
+            fl.slots = updated_slots
 
-        return removed
+        return removed_slots
 
     def update_center_by_shape(self):
         """
