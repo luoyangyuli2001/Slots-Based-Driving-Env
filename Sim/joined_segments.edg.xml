@@ -1,17 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <edges>
     <!-- standard_2lane -->
-    <edge id="e1" from="n1" to="n2" numLanes="2" speed="33.33"/>
+    <edge id="e1" from="n1" to="n2" numLanes="2">
+        <lane index="0" speed="22.22"/>  <!-- 右车道（慢） -->
+        <lane index="1" speed="27.78"/>  <!-- 左车道（快） -->
+    </edge>
 
     <!-- on_ramp_2to3 -->
-    <edge id="e2" from="n2" to="n3" numLanes="3" speed="33.33"/>
-    <edge id="ramp1" from="ramp1" to="n3" numLanes="1" speed="22.22"/>
+    <edge id="e2" from="n2" to="n3" numLanes="3">
+        <lane index="0" speed="16.67"/>
+        <lane index="1" speed="22.22"/>
+        <lane index="2" speed="27.78"/>
+    </edge>
+    <edge id="ramp1" from="ramp1" to="n3" numLanes="1">
+        <lane index="0" speed="16.67"/>
+    </edge>
 
     <!-- standard_3lane -->
-    <edge id="e3" from="n3" to="n4" numLanes="3" speed="33.33"/>
-    <edge id="e4" from="n4" to="n5" numLanes="3" speed="33.33"/>
+    <edge id="e3" from="n3" to="n4" numLanes="3">
+        <lane index="0" speed="16.67"/>
+        <lane index="1" speed="22.22"/>
+        <lane index="2" speed="27.78"/>
+    </edge>
+    <edge id="e4" from="n4" to="n5" numLanes="3">
+        <lane index="0" speed="16.67"/>
+        <lane index="1" speed="22.22"/>
+        <lane index="2" speed="27.78"/>
+    </edge>
 
     <!-- off_ramp_3to3 -->
-    <edge id="e5" from="n5" to="n6" numLanes="3" speed="33.33"/>
-    <edge id="exit1" from="n5" to="exit1" numLanes="1" speed="22.22"/>
+    <edge id="e5" from="n5" to="n6" numLanes="3">
+        <lane index="0" speed="16.67"/>
+        <lane index="1" speed="22.22"/>
+        <lane index="2" speed="27.78"/>
+    </edge>
+    <edge id="exit1" from="n5" to="exit1" numLanes="1">
+        <lane index="0" speed="16.67"/>
+    </edge>
 </edges>
