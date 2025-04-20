@@ -1,10 +1,9 @@
 # Controller/slot_controller.py
 
-
 import math
 import os
 import sys
-from typing import List, Dict, Tuple
+from typing import List, Tuple
 
 # === 设置路径 ===
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -14,16 +13,17 @@ sys.path.append(project_root)
 
 from Entity.slot import Slot
 from Entity.fulllane import FullLane
-from Controller.slot_generator import generate_single_slot_on_full_lane
+from Controller.slot_generator import SlotGenerator
 
 class SlotController:
-    def __init__(self, full_lanes: List[FullLane], time_step: float = 0.1):
+    def __init__(self, slot_generator: SlotGenerator, full_lanes: List[FullLane], time_step: float = 0.1):
         """
         初始化 Slot 控制器
         :param slots: 初始 slot 列表（所有 lane 的 slot 可合并）
         """
         self.full_lanes = full_lanes
         self.time_step = time_step  # 默认每个 step 模拟 1 秒 0.1s
+        self.slot_generator = slot_generator
 
     def step(self) -> List[Tuple[Slot, FullLane]]:
         """
@@ -48,7 +48,7 @@ class SlotController:
             # 再生逻辑：判断开头是否可生成 slot
             if not updated_slots or updated_slots[0].position_start >= 11.0:
                 # 当前第一个 slot 离起点足够远：可放一个新的
-                new_slot = generate_single_slot_on_full_lane(fl)
+                new_slot = self.slot_generator.generate_single_slot_on_full_lane(fl)
                 updated_slots.insert(0, new_slot)
 
             fl.slots = updated_slots

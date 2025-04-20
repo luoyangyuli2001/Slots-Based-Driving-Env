@@ -11,7 +11,7 @@ sys.path.append(project_root)
 
 from Sumo.sumo_netxml_parser import parse_netxml
 from Tools.utils import generate_temp_cfg
-from Controller.slot_generator import generate_slots_for_all_full_lanes
+from Controller.slot_generator import SlotGenerator
 from Controller.slot_controller import SlotController
 
 # SUMO Configuration
@@ -23,12 +23,17 @@ if __name__ == "__main__":
     print("[TEST] 初始化路网并生成 slot")
     segments, full_lanes = parse_netxml(NET_FILE)
 
+    # === 启动 SUMO ===
     generate_temp_cfg()
     traci.start([SUMO_BINARY, "-c", CFG_FILE])
     traci.simulationStep()
 
-    generate_slots_for_all_full_lanes(full_lanes)
-    slot_controller = SlotController(full_lanes)
+    # === 使用 SlotGenerator 生成 slot ===
+    slot_generator = SlotGenerator()
+    slot_generator.generate_slots_for_all_full_lanes(full_lanes)
+
+    # === 初始化 SlotController 控制 slot 流动 ===
+    slot_controller = SlotController(slot_generator, full_lanes)
 
     # 初始化渲染已添加的 slot 集合
     rendered_slots = set()

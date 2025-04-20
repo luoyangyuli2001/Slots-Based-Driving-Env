@@ -1,4 +1,4 @@
-# test_netxml_parser.py
+# Test/test_netxml_parser.py
 
 import traci
 import os
