@@ -42,10 +42,14 @@ class SlotController:
                 # 判断是否超出 full_lane
                 if slot.position_start >= fl.get_total_length():
                     removed_slots.append((slot, fl))
-                    new_slot = generate_single_slot_on_full_lane(fl)
-                    updated_slots.append(new_slot)
                 else:
                     updated_slots.append(slot)
+
+            # 再生逻辑：判断开头是否可生成 slot
+            if not updated_slots or updated_slots[0].position_start >= 11.0:
+                # 当前第一个 slot 离起点足够远：可放一个新的
+                new_slot = generate_single_slot_on_full_lane(fl)
+                updated_slots.insert(0, new_slot)
 
             fl.slots = updated_slots
 

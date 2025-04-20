@@ -11,10 +11,7 @@ sys.path.append(project_root)
 
 from Sumo.sumo_netxml_parser import parse_netxml
 from Tools.utils import generate_temp_cfg
-from Controller.slot_generator import (
-    generate_slots_for_all_full_lanes, 
-    generate_single_slot_on_full_lane
-)
+from Controller.slot_generator import generate_slots_for_all_full_lanes
 from Controller.slot_controller import SlotController
 
 # SUMO Configuration

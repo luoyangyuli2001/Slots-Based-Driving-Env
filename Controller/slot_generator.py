@@ -66,10 +66,9 @@ def generate_slots_for_full_lane(full_lane, slot_length=8.0, slot_gap=3.0):
 
         position += slot_length + slot_gap  # 向前推进
 
+    slots.sort(key=lambda s: s.position_start)
     full_lane.slots = slots
     return slots
-
-
 
 def generate_slots_for_all_full_lanes(full_lanes, slot_length=8.0, slot_gap=3.0):
     all_slots = []
@@ -81,16 +80,13 @@ def generate_slots_for_all_full_lanes(full_lanes, slot_length=8.0, slot_gap=3.0)
 
 def generate_single_slot_on_full_lane(full_lane: FullLane, slot_length=8.0, slot_gap=3.0) -> Slot:
     """
-    在 full_lane 起点处生成一个 slot（用于再生 / 初始化插入）。
+    在 full_lane 起点处生成一个 slot（用于再生）。
     """
     global global_index
     slot_id = f"slot_{global_index}"
     global_index += 1
 
-    lane = full_lane.lanes[0]  # 起点车道
-    full_shape = []
-    for l in full_lane.lanes:
-        full_shape.extend(l.shape)
+    lane = full_lane.lanes[0]
 
     slot = Slot(
         id=slot_id,
@@ -103,7 +99,12 @@ def generate_single_slot_on_full_lane(full_lane: FullLane, slot_length=8.0, slot
         segment_id=lane.segment_id
     )
 
-    slot.center = interpolate_position_from_shape(full_shape, slot.center)
+    # lane = full_lane.lanes[0]  # 起点车道
+    # full_shape = []
+    # for l in full_lane.lanes:
+    #     full_shape.extend(l.shape)
+
+    # slot.center = interpolate_position_from_shape(full_shape, slot.center)
     return slot
 
 # def generate_single_slot_on_lane(lane, slot_length=8.0, slot_gap=3.0):
