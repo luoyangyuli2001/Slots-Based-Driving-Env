@@ -1,7 +1,7 @@
 
             <configuration>
                 <input>
-                    <net-file value="joined_segments.net.xml"/>
+                    <net-file value="test.net.xml"/>
                 </input>
                 <time>
                     <begin value="0"/>

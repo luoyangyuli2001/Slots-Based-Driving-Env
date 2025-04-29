@@ -15,4 +15,6 @@
     <!-- off_ramp_3to3 -->
     <node id="n6" x="1250.00" y="0.00" type="priority"/>
     <node id="exit1" x="1150.00" y="100.00" type="priority"/>
+
+    <node id="n7" x="1500.00" y="50.00" type="priority"/>
 </nodes>

@@ -2,7 +2,7 @@
 import os
 
 def generate_temp_cfg(
-    net_file: str = "joined_segments.net.xml",
+    net_file: str = "test.net.xml",
     cfg_path: str = os.path.join("Sim", "temp.sumocfg")
 ):
     """

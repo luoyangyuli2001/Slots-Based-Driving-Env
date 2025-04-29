@@ -1,73 +1,65 @@
 # Controller/slot_controller.py
 
 import math
-import os
-import sys
 from typing import List, Tuple
-
-# === 设置路径 ===
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_dir, ".."))
-sys.path.append(project_root)
-
-
 from Entity.slot import Slot
 from Entity.fulllane import FullLane
 from Controller.slot_generator import SlotGenerator
 
+
 class SlotController:
     def __init__(self, slot_generator: SlotGenerator, full_lanes: List[FullLane], time_step: float = 0.1):
-        """
-        初始化 Slot 控制器
-        :param slots: 初始 slot 列表（所有 lane 的 slot 可合并）
-        """
-        self.full_lanes = full_lanes
-        self.time_step = time_step  # 默认每个 step 模拟 1 秒 0.1s
         self.slot_generator = slot_generator
+        self.full_lanes = full_lanes
+        self.time_step = time_step
+        self.min_spawn_distance = slot_generator.slot_length + slot_generator.slot_gap
 
     def step(self) -> List[Tuple[Slot, FullLane]]:
         """
-        推进所有 slot，并返回到达末尾需要移除的 slot 及其所在 full_lane
-        :return: List of (slot, full_lane) 元组
+        推进所有 slot，完成再生与移除
+        :return: 被移除的 slot 和其所属 full_lane 列表
         """
         removed_slots = []
 
         for fl in self.full_lanes:
+            total_length = fl.get_total_length()
+            shape = fl.full_shape
             updated_slots = []
+
             for slot in fl.slots:
-                # 推进位置
+                # 基于 arc 长度推进
                 slot.position_start += slot.speed * self.time_step
                 slot.position_end = slot.position_start + slot.length
 
-                # 判断是否超出 full_lane
-                if slot.position_start >= fl.get_total_length():
+                if slot.position_start >= total_length:
                     removed_slots.append((slot, fl))
                 else:
+                    # 实时更新 center 坐标
+                    center_pos = slot.position_start + slot.length / 2
+                    slot.center = self.interpolate(shape, center_pos)
                     updated_slots.append(slot)
 
-            # 再生逻辑：判断开头是否可生成 slot
-            if not updated_slots or updated_slots[0].position_start >= 11.0:
-                # 当前第一个 slot 离起点足够远：可放一个新的
+            # === 再生逻辑 ===
+            if not updated_slots:
+                allow_insert = True
+            else:
+                head_slot = updated_slots[0]
+                allow_insert = head_slot.position_start >= self.min_spawn_distance
+
+            if allow_insert:
                 new_slot = self.slot_generator.generate_single_slot_on_full_lane(fl)
+                new_slot.center = self.interpolate(shape, new_slot.position_start + new_slot.length / 2)
                 updated_slots.insert(0, new_slot)
 
             fl.slots = updated_slots
 
         return removed_slots
 
-    def update_center_by_shape(self):
-        """
-        使用 FullLane 的形状插值更新所有 slot 的中心点坐标。
-        """
-        for full_lane in self.full_lanes:
-            shape = full_lane.get_combined_shape()
-            for slot in full_lane.slots:
-                center_d = slot.position_start + slot.length / 2
-                slot.center = self.interpolate(shape, center_d)
-
-
     @staticmethod
     def interpolate(shape, target_distance):
+        """
+        在 shape 上插值计算目标距离对应的坐标
+        """
         accumulated = 0.0
         for i in range(len(shape) - 1):
             x1, y1 = shape[i]
@@ -79,4 +71,4 @@ class SlotController:
                 ratio = (target_distance - accumulated) / seg_len
                 return (x1 + dx * ratio, y1 + dy * ratio)
             accumulated += seg_len
-        return shape[-1]
+        return shape[-1]  # fallback

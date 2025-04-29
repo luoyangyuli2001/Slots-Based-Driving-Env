@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edges>
+
+    <!-- 正向主路 e1 -->
+    <edge id="e1" from="n1" to="n2" numLanes="2">
+        <lane index="0" speed="22.22" width="3.2"/>
+        <lane index="1" speed="27.78" width="3.2"/>
+    </edge>
+    <!-- 反向主路 -e1 -->
+    <edge id="-e1" from="-n2" to="-n1" numLanes="2">
+        <lane index="0" speed="22.22" width="3.2"/>
+        <lane index="1" speed="27.78" width="3.2"/>
+    </edge>
+
+    <!-- 正向主路 e2 -->
+    <edge id="e2" from="n2" to="n3" numLanes="3">
+        <lane index="0" speed="16.67" width="3.2"/>
+        <lane index="1" speed="22.22" width="3.2"/>
+        <lane index="2" speed="27.78" width="3.2"/>
+    </edge>
+    <!-- 反向主路 -e2 -->
+    <edge id="-e2" from="-n3" to="-n2" numLanes="3">
+        <lane index="0" speed="16.67" width="3.2"/>
+        <lane index="1" speed="22.22" width="3.2"/>
+        <lane index="2" speed="27.78" width="3.2"/>
+    </edge>
+
+    <!-- 正向主路 e3 -->
+    <edge id="e3" from="n3" to="n4" numLanes="3">
+        <lane index="0" speed="16.67" width="3.2"/>
+        <lane index="1" speed="22.22" width="3.2"/>
+        <lane index="2" speed="27.78" width="3.2"/>
+    </edge>
+    <!-- 反向主路 -e3 -->
+    <edge id="-e3" from="-n4" to="-n3" numLanes="3">
+        <lane index="0" speed="16.67" width="3.2"/>
+        <lane index="1" speed="22.22" width="3.2"/>
+        <lane index="2" speed="27.78" width="3.2"/>
+    </edge>
+
+    <!-- 正向主路 e4 -->
+    <edge id="e4" from="n4" to="n5" numLanes="3">
+        <lane index="0" speed="16.67" width="3.2"/>
+        <lane index="1" speed="22.22" width="3.2"/>
+        <lane index="2" speed="27.78" width="3.2"/>
+    </edge>
+    <!-- 反向主路 -e4 -->
+    <edge id="-e4" from="-n5" to="-n4" numLanes="3">
+        <lane index="0" speed="16.67" width="3.2"/>
+        <lane index="1" speed="22.22" width="3.2"/>
+        <lane index="2" speed="27.78" width="3.2"/>
+    </edge>
+
+    <!-- 正向主路 e5 -->
+    <edge id="e5" from="n5" to="n6" numLanes="3">
+        <lane index="0" speed="16.67" width="3.2"/>
+        <lane index="1" speed="22.22" width="3.2"/>
+        <lane index="2" speed="27.78" width="3.2"/>
+    </edge>
+    <!-- 反向主路 -e5 -->
+    <edge id="-e5" from="-n6" to="-n5" numLanes="3">
+        <lane index="0" speed="16.67" width="3.2"/>
+        <lane index="1" speed="22.22" width="3.2"/>
+        <lane index="2" speed="27.78" width="3.2"/>
+    </edge>
+
+    <!-- 正向主路 e6 -->
+    <edge id="e6" from="n6" to="n7" numLanes="3">
+        <lane index="0" speed="16.67" width="3.2"/>
+        <lane index="1" speed="22.22" width="3.2"/>
+        <lane index="2" speed="27.78" width="3.2"/>
+    </edge>
+    <!-- 反向主路 -e6 -->
+    <edge id="-e6" from="-n7" to="-n6" numLanes="3">
+        <lane index="0" speed="16.67" width="3.2"/>
+        <lane index="1" speed="22.22" width="3.2"/>
+        <lane index="2" speed="27.78" width="3.2"/>
+    </edge>
+
+    <!-- on_ramp1 连接正向 -->
+    <edge id="on_ramp1" from="on_ramp1" to="n3" numLanes="1">
+        <lane index="0" speed="16.67" width="3.2"/>
+    </edge>
+
+    <!-- off_ramp1 连接正向 -->
+    <edge id="off_ramp1" from="n5" to="off_ramp1" numLanes="1">
+        <lane index="0" speed="16.67" width="3.2"/>
+    </edge>
+
+    <!-- -off_ramp1 连接反向 -->
+    <edge id="-off_ramp1" from="-n3" to="-off_ramp1" numLanes="1">
+        <lane index="0" speed="16.67" width="3.2"/>
+    </edge>
+
+    <!-- -on_ramp1 连接反向 -->
+    <edge id="-on_ramp1" from="-on_ramp1" to="-n5" numLanes="1">
+        <lane index="0" speed="16.67" width="3.2"/>
+    </edge>
+</edges>

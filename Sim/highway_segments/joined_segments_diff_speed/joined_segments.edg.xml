@@ -37,4 +37,9 @@
     <edge id="exit1" from="n5" to="exit1" numLanes="1">
         <lane index="0" speed="16.67"/>
     </edge>
+    <edge id="e6" from="n6" to="n7" priority="-1" numLanes="3">
+        <lane index="0" speed="16.67"/>
+        <lane index="1" speed="22.22"/>
+        <lane index="2" speed="27.78"/>
+    </edge>
 </edges>

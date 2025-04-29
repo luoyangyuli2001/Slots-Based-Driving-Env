@@ -9,29 +9,25 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.append(project_root)
 
-from Sumo.sumo_netxml_parser import parse_netxml
+from Sumo.sumo_netxml_parser import NetXMLParser
 from Tools.utils import generate_temp_cfg
 from Controller.slot_generator import SlotGenerator
 from Controller.slot_controller import SlotController
 
 # SUMO Configuration
 SUMO_BINARY = "sumo-gui"
-NET_FILE = "Sim/joined_segments.net.xml"
+NET_FILE = "Sim/test.net.xml"
 CFG_FILE = "Sim/temp.sumocfg"
 
 if __name__ == "__main__":
-    print("[TEST] 初始化路网并生成 slot")
-    segments, full_lanes = parse_netxml(NET_FILE)
-
-    # === 启动 SUMO ===
+    parser = NetXMLParser(NET_FILE)
+    full_lanes = parser.build_full_lanes()
     generate_temp_cfg()
     traci.start([SUMO_BINARY, "-c", CFG_FILE])
     traci.simulationStep()
 
-    # === 使用 SlotGenerator 生成 slot ===
     slot_generator = SlotGenerator()
     slot_generator.generate_slots_for_all_full_lanes(full_lanes)
-
     # === 初始化 SlotController 控制 slot 流动 ===
     slot_controller = SlotController(slot_generator, full_lanes)
 
@@ -58,7 +54,6 @@ if __name__ == "__main__":
 
         # 推进 slot 并获取移除项
         removed = slot_controller.step()
-        slot_controller.update_center_by_shape()
 
         # 更新现有 slot 坐标或添加新 slot
         for fl in full_lanes:

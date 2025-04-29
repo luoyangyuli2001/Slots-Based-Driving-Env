@@ -1,24 +1,27 @@
 # Entity/Lane.py
 
 class Lane:
-    def __init__(self, 
-                 id: str, 
-                 index: int, 
-                 speed: float, 
-                 length: float, 
-                 shape: list = None):
+    def __init__(self, id, index, speed, shape, from_node=None, to_node=None, is_internal=False):
+        self.id = id                           # lane的唯一标识
+        self.index = index                     # 车道在edge内的编号（左起0）
+        self.speed = speed                     # 限速 m/s
+        self.shape = self._parse_shape(shape)  # [(x1,y1), (x2,y2), ...] 解析成点列
+        self.from_node = from_node             # 起点节点
+        self.to_node = to_node                 # 终点节点
+        self.is_internal = is_internal         # 是否为internal lane
 
-        self.id = id                      # 唯一的 lane ID（来自 net.xml）
-        self.index = index                # 车道在 segment 中的索引（如0、1、2）
-        self.speed = speed                # 限速（m/s）
-        self.length = length              # 车道长度（m）
-        self.shape = shape                # 车道的几何路径（点序列）
-        self.segment_id = None            # 所属 segment ID，可在解析时赋值
-
-        self.next_lane = None             # 后继车道对象（单一引用）
-        self.is_entry = False             # 标记为Slot生成路段
-        self.is_end = False               # 标记为Slot终点路段
-        self.entry_ref = None             # 标记映射的entry_lane (用于slot再生)
+        # 未来扩展字段
+        self.segment_id = None                    # 归属的Segment（现在可以留空）
+        self.connected_lanes = []              # 与本lane直接连接的其他lanes（用于动态查找）
+    
+    def _parse_shape(self, shape_str):
+        """将SUMO的shape字符串转成[(x,y), (x,y)]"""
+        points = []
+        for pair in shape_str.strip().split():
+            x, y = map(float, pair.split(','))
+            points.append((x, y))
+        return points
 
     def __repr__(self):
-        return f"Lane(id={self.id}, index={self.index}, speed={self.speed}, length={self.length}, next_lane={self.next_lane}, is_entry={self.is_entry})"
+        return f"Lane(id={self.id}, from={self.from_node}, to={self.to_node}, internal={self.is_internal})"
+

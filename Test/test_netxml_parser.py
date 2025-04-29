@@ -10,7 +10,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.append(project_root)
 
-from Sumo.sumo_netxml_parser import parse_netxml
+from Sumo.sumo_netxml_parser import NetXMLParser
 
 
 # ==== SUMO 配置 ====
@@ -85,12 +85,9 @@ def run_sumo_and_spawn_vehicles(spawn_lanes_standard, spawn_lanes_ramp):
 
 
 if __name__ == "__main__":
-    print("[INFO] 解析路网中...")
-    segments = parse_netxml(NET_FILE)
-    print(f"[INFO] 成功解析 {len(segments)} 个 Segment")
+    parser = NetXMLParser("Sim/test.net.xml")
+    full_lanes = parser.build_full_lanes()
 
-    generate_temp_cfg(RELATIVE_NET_FILE, SUMOCFG_FILE)
-    # 获取 spawn lanes
-    standard_lanes = get_spawn_lanes_by_type(segments, segment_type="standard", exact_edge_id="e1")
-    ramp_lanes = get_spawn_lanes_by_type(segments, segment_type="on_ramp")
-    run_sumo_and_spawn_vehicles(standard_lanes, ramp_lanes)
+    print(f"构建了 {len(full_lanes)} 条 FullLane：")
+    for fl in full_lanes:
+        print(fl)

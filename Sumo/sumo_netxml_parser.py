@@ -1,183 +1,83 @@
 # Sumo/sumo_netxml_parser.py
 
-import os
-import sys
 import xml.etree.ElementTree as ET
-
-# 添加项目根目录到 sys.path 便于进行测试
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_dir, ".."))
-sys.path.append(project_root)
-
-from Entity.segment import Segment
+from collections import defaultdict
 from Entity.lane import Lane
+from Entity.segment import Segment
 from Entity.fulllane import FullLane
 
 
-def classify_segment(edge_id):
-    """
-    基于 edge_id 的命名判断 segment 类型
-    1. on-ramp
-    2. off-ramp
-    3. standard --> straight
-    """
-    if "ramp" in edge_id.lower():
-        return "on_ramp"
-    elif "exit" in edge_id.lower():
-        return "off_ramp"
-    else:
-        return "standard"
+class NetXMLParser:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.lane_dict = {}
+        self.connections = []
+        self._parse_all_edges()
 
-def is_internal_edge(edge_element):
-    """
-    判断是否是 SUMO 自动生成的 internal edge
-    """
-    edge_id = edge_element.get("id", "")
-    function = edge_element.get("function", "")
-    return edge_id.startswith(":") or function == "internal"
+    def _parse_all_edges(self):
+        tree = ET.parse(self.file_path)
+        root = tree.getroot()
 
-def parse_netxml(netxml_path):
-    """
-    解析 .net.xml 文件，构建 Segment 和 Lane 实体对象，并基于 index 设置 next_lane
-    """
-    tree = ET.parse(netxml_path)
-    root = tree.getroot()
-    segments = []
-    lane_dict = {}
+        # 1. 构建所有 Lane 实体
+        for edge in root.findall("edge"):
+            for lane_elem in edge.findall("lane"):
+                lane_id = lane_elem.get("id")
+                index = int(lane_elem.get("index"))
+                speed = float(lane_elem.get("speed"))
+                shape = lane_elem.get("shape")
+                lane = Lane(id=lane_id, index=index, speed=speed, shape=shape)
+                self.lane_dict[lane_id] = lane
 
-    # === Step 1: 解析所有 edge 与 lane，构建 Segment 与 Lane 实体 ===
-    for edge in root.findall("edge"):
-        if is_internal_edge(edge):
-            continue
+    def build_full_lanes(self) -> list[FullLane]:
+        """
+        从 net.xml 文件中构建所有主干道 FullLane 实体
+        """
+        tree = ET.parse(self.file_path)
+        root = tree.getroot()
 
-        edge_id = edge.get("id")
-        from_node = edge.get("from")
-        to_node = edge.get("to")
-        shape_points = []
-        shape = edge.get("shape")
-        if shape:
-            shape_points = [tuple(map(float, p.split(','))) for p in shape.strip().split()]
+        # 1. 构建 lane-to-lane 连接图
+        lane_graph = defaultdict(list)
+        incoming = defaultdict(set)
 
-        # 构建 Lane 实体列表
-        lanes = []
-        for lane_elem in edge.findall("lane"):
-            lane = Lane(
-                id=lane_elem.get("id"),
-                index=int(lane_elem.get("index")),
-                speed=float(lane_elem.get("speed")),
-                length=float(lane_elem.get("length")),
-                shape=[tuple(map(float, p.split(','))) for p in lane_elem.get("shape", "").strip().split()]
-            )
-            lanes.append(lane)
-            lane_dict[lane.id] = lane
+        for conn in root.findall("connection"):
+            from_edge = conn.get("from")
+            to_edge = conn.get("to")
+            via = conn.get("via")
+            from_lane = conn.get("fromLane")
+            to_lane = conn.get("toLane")
 
-        # 构建 Segment 对象
-        segment = Segment(
-            id=edge_id,
-            from_node=from_node,
-            to_node=to_node,
-            segment_type=classify_segment(edge_id),
-            shape=shape_points
-        )
+            if not (from_edge and to_edge and via and from_lane is not None and to_lane is not None):
+                continue
+            if "ramp" in from_edge.lower() or "ramp" in to_edge.lower():
+                continue
 
-        for lane in lanes:
-            lane.segment_id = segment.id
-            segment.add_lane(lane)
+            from_lane_id = f"{from_edge}_{from_lane}"
+            via_lane_id = via
+            to_lane_id = f"{to_edge}_{to_lane}"
 
-        segments.append(segment)
+            if from_lane_id in self.lane_dict and via_lane_id in self.lane_dict and to_lane_id in self.lane_dict:
+                lane_graph[from_lane_id].append(via_lane_id)
+                lane_graph[via_lane_id].append(to_lane_id)
+                incoming[via_lane_id].add(from_lane_id)
+                incoming[to_lane_id].add(via_lane_id)
 
-    # === Step 2: 构建 lane.next_lane 引用（右舵左行 lane 对齐）===
-    # ✅ 使用 index 基于 segment 顺序构建 next_lane 显式连接关系
-    segment_dict = {seg.id: seg for seg in segments}
+        # 3. 找起点 lane（无前驱）
+        start_lanes = [lane_id for lane_id in lane_graph if lane_id not in incoming]
 
-    for i in range(len(segments) - 1):
-        curr_seg = segments[i]
-        next_seg = segments[i + 1]
+        # 4. 构建 FullLane
+        full_lanes = []
+        for start_lane in start_lanes:
+            visited = set()
+            current = start_lane
+            full_lane = FullLane(start_lane_id=start_lane)
+            while current and current not in visited:
+                visited.add(current)
+                if current in self.lane_dict:
+                    full_lane.add_lane(self.lane_dict[current])
+                next_list = lane_graph.get(current, [])
+                current = next_list[0] if next_list else None
 
-        if curr_seg.segment_type != "standard" or next_seg.segment_type != "standard":
-            continue
+            if full_lane.lanes:
+                full_lanes.append(full_lane)
 
-        n1 = len(curr_seg.lanes)
-        n2 = len(next_seg.lanes)
-
-        for curr_lane in curr_seg.lanes:
-            i1 = curr_lane.index
-            offset = n2 - n1
-            i2 = i1 + offset
-
-            if 0 <= i2 < n2:
-                for next_lane in next_seg.lanes:
-                    if next_lane.index == i2:
-                        curr_lane.next_lane = next_lane
-                        break
-
-    # === Step 3: 标记 entry_lane / end_lane，并建立 entry_ref ===
-    # 构建所有被引用为 next_lane 的 lane_id 集合, 用于下一步标记 entry lane 
-    # 没有被其他lane标记为next_lane的就是entry lane
-    next_lane_ids = set()
-    for seg in segments:
-        for lane in seg.lanes:
-            if lane.next_lane:
-                next_lane_ids.add(lane.next_lane.id)
-
-    entry_lanes = []
-    # 标记 entry lane（仅主干道参与）
-    for seg in segments:
-        if seg.segment_type != "standard":
-            continue
-        for lane in seg.lanes:
-            if lane.id not in next_lane_ids:
-                lane.is_entry = True
-                entry_lanes.append(lane)
-
-    # 从每个 entry lane 出发, 寻找对应的 end lane. 并分别标记entry与end
-    for entry in entry_lanes:
-        current = entry
-        visited = set()
-        while current and current.id not in visited:
-            visited.add(current.id)
-            if not current.next_lane:
-                current.is_end = True
-                current.entry_ref = entry
-                break
-            current = current.next_lane
-
-    # === Step 4: 构建 FullLane 实体列表 ===
-    full_lanes = []
-    full_lane_index = 0
-
-    for lane in lane_dict.values():
-        if getattr(lane, "is_entry", False):
-            full_lane = FullLane(id=f"full_{full_lane_index}")
-            full_lane_index += 1
-
-            current = lane
-            while current:
-                full_lane.add_lane(current)
-                current.full_lane = full_lane
-                if getattr(current, "is_end", False):
-                    break
-                current = current.next_lane
-
-            full_lanes.append(full_lane)
-
-    return segments, full_lanes
-
-# 测试入口
-if __name__ == "__main__":
-    net_path = "Sim/joined_segments.net.xml"
-    segments, full_lanes = parse_netxml(net_path)
-
-    print(f"共解析出 {len(segments)} 个 Segment:")
-    for seg in segments:
-        print(f"[SEGMENT] {seg.id} ({seg.segment_type})")
-        for lane in seg.lanes:
-            next_id = lane.next_lane.id if lane.next_lane else "None"
-            print(f"   [LANE] {lane.id} -> next_lane: {next_id}")
-            print(f"   [LANE] {lane.id} is entry? {lane.is_entry}")
-            print(f"   [LANE] {lane.id} is end? {lane.is_end}")
-            print(f"   [LANE] {lane.id} is entry -> {lane.entry_ref}")
-
-    print(f"\n共构建 {len(full_lanes)} 条 FullLane:")
-    for fl in full_lanes:
-        print(fl)
+        return full_lanes

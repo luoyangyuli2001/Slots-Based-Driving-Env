@@ -1,28 +1,14 @@
 # Controller/slot_generator.py
 
-import os
-import sys
-import traci
 import math
-
-# === 设置路径 ===
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_dir, ".."))
-sys.path.append(project_root)
-
 from Entity.slot import Slot
 from Entity.fulllane import FullLane
-from Sumo.sumo_netxml_parser import parse_netxml
-from Tools.utils import generate_temp_cfg
-
-SUMO_BINARY = "sumo-gui"
-CFG_FILE = os.path.join("Sim", "temp.sumocfg")
-NET_FILE = os.path.join("Sim", "joined_segments.net.xml")
+from Config import config
 
 class SlotGenerator:
-    def __init__(self, slot_length=8.0, slot_gap=3.0):
-        self.slot_length = slot_length
-        self.slot_gap = slot_gap
+    def __init__(self, slot_length=None, slot_gap=None):
+        self.slot_length = slot_length if slot_length is not None else config.SLOT_LENGTH
+        self.slot_gap = slot_gap if slot_gap is not None else config.SLOT_GAP
         self.global_index = 0
 
     def interpolate_position_from_shape(self, shape, target_distance):
@@ -45,7 +31,7 @@ class SlotGenerator:
     def generate_slots_for_full_lane(self, full_lane):
         slots = []
         total_length = full_lane.get_total_length()
-        shape = full_lane.get_combined_shape()
+        shape = full_lane.full_shape
         speed = full_lane.lanes[0].speed if full_lane.lanes else 0.0
         lane = full_lane.lanes[0] if full_lane.lanes else None
 
@@ -161,37 +147,3 @@ class SlotGenerator:
 #             )
 #             all_slots.extend(lane_slots)
 #     return all_slots
-
-
-# === 测试入口 ===
-if __name__ == "__main__":
-    print("[TEST] 解析路网...")
-    segments, full_lanes = parse_netxml(NET_FILE)
-
-    print(f"[INFO] 共解析 {len(full_lanes)} 条 FullLane")
-
-    generate_temp_cfg()
-    traci.start([SUMO_BINARY, "-c", CFG_FILE])
-    traci.simulationStep()
-
-    slot_generator = SlotGenerator()
-    all_slots = slot_generator.generate_slots_for_all_full_lanes(full_lanes)
-    print(f"[INFO] 共生成 {len(all_slots)} 个 slot")
-
-    for slot in all_slots:
-        try:
-            if slot.center is None:
-                continue
-            x, y = slot.center
-            traci.poi.add(slot.id, x, y, color=(255, 0, 0), layer=5)
-            traci.poi.setParameter(slot.id, "label", slot.id)
-            traci.poi.setParameter(slot.id, "imgWidth", "5")
-            traci.poi.setParameter(slot.id, "imgHeight", "5")
-        except Exception as e:
-            print(f"[ERROR] slot {slot.id} 添加失败: {e}")
-
-    for _ in range(500):
-        traci.simulationStep()
-
-    traci.close()
-    print("[TEST] 流动测试结束。")
