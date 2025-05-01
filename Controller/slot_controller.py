@@ -5,13 +5,13 @@ from typing import List, Tuple
 from Entity.slot import Slot
 from Entity.fulllane import FullLane
 from Controller.slot_generator import SlotGenerator
-
+from Config import config
 
 class SlotController:
-    def __init__(self, slot_generator: SlotGenerator, full_lanes: List[FullLane], time_step: float = 0.1):
+    def __init__(self, slot_generator: SlotGenerator, full_lanes: List[FullLane], time_step: float = None):
         self.slot_generator = slot_generator
         self.full_lanes = full_lanes
-        self.time_step = time_step
+        self.time_step = time_step if time_step is not None else config.TIME_STEP
         self.min_spawn_distance = slot_generator.slot_length + slot_generator.slot_gap
 
     def step(self) -> List[Tuple[Slot, FullLane]]:
