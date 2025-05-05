@@ -10,7 +10,6 @@ class Slot:
                  speed,
                  length=8.0,
                  gap_to_previous=3.0,
-                 occupied=False,
                  vehicle_id=None):
         
         self.id = id                            # Slot 唯一标识
@@ -28,7 +27,7 @@ class Slot:
         self.center = (self.position_start + self.position_end) / 2
 
         # 占用信息
-        self.occupied = occupied
+        self.occupied = False
         self.vehicle_id = vehicle_id
 
     def occupy(self, vehicle_id):

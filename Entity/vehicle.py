@@ -1,27 +1,42 @@
 # Entity/vehicle.py
 
 from enum import Enum
+from Entity.slot import Slot
+from Entity.route import Route
 
 class VehicleStatus(Enum):
-    INITIALIZING = "initializing"
-    IDLE = "idle"
-    TRANSITIONING = "transitioning"
-    EXITING = "exiting"
+    INITIALIZING = 0
+    IDLE = 1
+    INTERACTING = 2
+    EXITED = 3
+
+class VehicleType:
+    def __init__(self, id: str, accel: float, decel: float, max_speed: float, length: float):
+        self.id = id
+        self.accel = accel
+        self.decel = decel
+        self.max_speed = max_speed
+        self.length = length
+
+    def __repr__(self):
+        return f"VehicleType(id={self.id}, max_speed={self.max_speed}, length={self.length})"
 
 class Vehicle:
-    def __init__(self, id, lane, segment, route_entry, route_exit, full_lane,
-                 position=0.0, speed=0.0, current_slot=None, status=VehicleStatus.INITIALIZING):
-        self.id = id                      # 唯一车辆 ID
-        self.lane = lane                  # 当前 Lane
-        self.segment = segment            # 当前 Segment
-        self.route_entry = route_entry    # 路线起点 ID
-        self.route_exit = route_exit      # 路线终点 ID
-        self.full_lane = full_lane        # 当前 FullLane
-        self.position = position
-        self.speed = speed
+    def __init__(self,
+                 id: str,
+                 current_slot: Slot,
+                 route: Route,
+                 vehicle_type: VehicleType,
+                 speed: float,
+                 position: float,
+                 status: VehicleStatus = VehicleStatus.INITIALIZING):
+        self.id = id
         self.current_slot = current_slot
+        self.route = route
+        self.vehicle_type = vehicle_type
+        self.speed = speed
+        self.position = position
         self.status = status
 
     def __repr__(self):
-        return (f"[VEHICLE] {self.id} | pos: {self.position:.2f} | speed: {self.speed:.2f} | "
-                f"status: {self.status.value} | lane: {self.lane.id}")
+        return f"Vehicle(id={self.id}, route={self.route.id}, slot={self.current_slot.id})"

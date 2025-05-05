@@ -51,6 +51,9 @@ class SlotController:
                 new_slot.center = self.interpolate(shape, new_slot.position_start + new_slot.length / 2)
                 updated_slots.insert(0, new_slot)
 
+            # 排序：确保 slot 始终按 position_start 升序排列
+            updated_slots.sort(key=lambda s: s.position_start)
+
             fl.slots = updated_slots
 
         return removed_slots
