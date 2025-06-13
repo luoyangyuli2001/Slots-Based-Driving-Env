@@ -1,3 +1,5 @@
+# Controller/vehicle_generator.py
+
 from Entity.vehicle import Vehicle, VehicleStatus
 from Entity.slot import Slot
 from Entity.fulllane import FullLane
@@ -18,26 +20,29 @@ class VehicleGenerator:
         """默认随机选一条路线（可后续支持按比例）"""
         return random.choice(list(self.routes.values()))
 
-
-    def generate_vehicle(self, slot: Slot, route: Route) -> Vehicle | None:
-        """基于指定路线和 slot 生成一个车辆"""
-        if slot.occupied:
+    def generate_vehicle(self, slot: Slot | None, route: Route) -> Vehicle | None:
+        """
+        生成车辆：如果 slot 不为 None，则绑定 slot（用于主干道）；
+        否则生成未绑定 slot 的车辆（用于 on-ramp）
+        """
+        if slot and slot.occupied:
             return None
 
         veh_id = f"veh_{self.global_vehicle_index}"
         self.global_vehicle_index += 1
+
+        if slot:
+            slot.occupy(veh_id)
 
         vehicle = Vehicle(
             id=veh_id,
             current_slot=slot,
             route=route,
             vehicle_type=self.default_type,
-            speed=slot.speed,
-            position=slot.position_start,
+            speed=slot.speed if slot else 0.0,
+            position=slot.position_start if slot else 0.0,
             status=VehicleStatus.INITIALIZING
         )
 
-        slot.occupied = True
-        slot.vehicle_id = veh_id
         self.generated_vehicles.append(vehicle)
         return vehicle

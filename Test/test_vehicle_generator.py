@@ -1,8 +1,11 @@
+# Test/test_vehicle_generator.py
+
 import os
 import sys
 import time
 import random
 import traci
+import math
 from collections import defaultdict
 
 # 设置路径
@@ -108,55 +111,94 @@ if __name__ == "__main__":
                 continue
             
             selected_lane = random.choice(candidate_lanes)
-            # 找到该 lane 对应的 FullLane
-            target_fl = None
-            for fl in full_lanes:
-                if fl.start_lane_id == selected_lane.id:
-                    target_fl = fl
-                    break
-            
-            if not target_fl or not target_fl.slots:
-                print(f"[INFO] 未找到合适的 FullLane 或其无可用 slot：{selected_lane.id}")
-                continue
 
-            slot = target_fl.slots[0]
-            if getattr(slot, "occupied", False):
-                print(f"[INFO] slot {slot.id} 已被占用，跳过生成")
-                continue            
+            # 检查是否为 ramp
+            is_ramp = "ramp" in selected_lane.id.lower()
 
-            vehicle = vehicle_generator.generate_vehicle(slot, selected_route)
+            vehicle = None
+            if is_ramp:
+                vehicle = vehicle_generator.generate_vehicle(slot=None, route=selected_route)
+            else:
+                # 查找 full lane 并分配 slot
+                target_fl = None
+                for fl in full_lanes:
+                    if fl.start_lane_id == selected_lane.id:
+                        target_fl = fl
+                        break
+
+                if not target_fl or not target_fl.slots:
+                    print(f"[INFO] 未找到合适 FullLane 或无可用 slot：{selected_lane.id}")
+                    continue
+
+                slot = target_fl.slots[0]
+                if getattr(slot, "occupied", False):
+                    print(f"[INFO] slot {slot.id} 已被占用，跳过生成")
+                    continue
+
+                vehicle = vehicle_generator.generate_vehicle(slot=slot, route=selected_route)
 
             if vehicle and vehicle.id not in rendered_vehicles:
                 try:
-                    slot = vehicle.current_slot
-                    traci.vehicle.add(
-                        vehID=vehicle.id,
-                        routeID=vehicle.route.id,
-                        typeID=vehicle.vehicle_type.id,
-                        departPos=str(slot.position_start),
-                        departSpeed=str(slot.speed),
-                        departLane=slot.lane.id.split("_")[-1]
-                    )
-                    # 禁用变道
-                    traci.vehicle.setLaneChangeMode(vehicle.id, 256)
+                    if vehicle.current_slot:
+                        slot = vehicle.current_slot
+                        traci.vehicle.add(
+                            vehID=vehicle.id,
+                            routeID=vehicle.route.id,
+                            typeID=vehicle.vehicle_type.id,
+                            departPos=str(slot.position_start),
+                            departSpeed=str(slot.speed),
+                            departLane=slot.lane.id.split("_")[-1]
+                        )
+                        # 禁用变道
+                        traci.vehicle.setLaneChangeMode(vehicle.id, 256)
 
-                    # 禁用自动加速
-                    # 默认（所有检查开启）-> [0 0 1 1 1 1 1] -> 速度模式 = 31
-                    # 大多数检查关闭（遗留）-> [0 0 0 0 0 0 0] -> 速度模式 = 0
-                    # 所有检查均关闭 -> [1 1 0 0 0 0 0] -> 速度模式 = 96
-                    # 禁用通行权检查 -> [0 1 1 0 1 1 1] -> 速度模式 = 55
-                    # 闯红灯 [0 0 0 0 1 1 1] = 7（也需要 setSpeed 或 slowDown）
-                    # 即使路口有人，也要闯红灯 [0 1 0 0 1 1 1] = 39（也需要 setSpeed 或 slowDown）
+                        # 禁用自动加速
+                        # 默认（所有检查开启）-> [0 0 1 1 1 1 1] -> 速度模式 = 31
+                        # 大多数检查关闭（遗留）-> [0 0 0 0 0 0 0] -> 速度模式 = 0
+                        # 所有检查均关闭 -> [1 1 0 0 0 0 0] -> 速度模式 = 96
+                        # 禁用通行权检查 -> [0 1 1 0 1 1 1] -> 速度模式 = 55
+                        # 闯红灯 [0 0 0 0 1 1 1] = 7（也需要 setSpeed 或 slowDown）
+                        # 即使路口有人，也要闯红灯 [0 1 0 0 1 1 1] = 39（也需要 setSpeed 或 slowDown）
 
-                    traci.vehicle.setSpeedMode(vehicle.id, 0)
-                    # 指定速度为车道速度
-                    traci.vehicle.setSpeed(vehicle.id, vehicle.speed)
+                        traci.vehicle.setSpeedMode(vehicle.id, 0)
+                        # 指定速度为车道速度
+                        traci.vehicle.setSpeed(vehicle.id, vehicle.speed)
 
-                    # 精确定位到 slot 中心
-                    edge_id = slot.lane.id.rsplit("_", 1)[0]
-                    lane_index = int(slot.lane.id.rsplit("_", 1)[-1])
-                    traci.vehicle.moveToXY(vehicle.id, edgeID=edge_id, laneIndex=lane_index, x=slot.center[0], y=slot.center[1], angle=0, keepRoute=1)
-                    
+                        # === 使用slot.heading进行精确放置 ===
+                        vehicle_length = vehicle.vehicle_type.length
+                        heading_rad = math.radians(slot.heading)
+
+                        x_center, y_center = slot.center
+                        x_front = x_center + (vehicle_length / 2.0) * math.cos(heading_rad)
+                        y_front = y_center + (vehicle_length / 2.0) * math.sin(heading_rad)
+
+                        edge_id = slot.lane.id.rsplit("_", 1)[0]
+                        lane_index = int(slot.lane.id.rsplit("_", 1)[-1])
+
+                        # 精确定位到 slot 中心
+                        edge_id = slot.lane.id.rsplit("_", 1)[0]
+                        lane_index = int(slot.lane.id.rsplit("_", 1)[-1])
+                        traci.vehicle.moveToXY(
+                            vehicle.id,
+                            edgeID=edge_id,
+                            laneIndex=lane_index,
+                            x=x_front,
+                            y=y_front,
+                            angle=slot.heading,
+                            keepRoute=1
+                        )
+                    else:
+                        traci.vehicle.add(
+                            vehID=vehicle.id,
+                            routeID=vehicle.route.id,
+                            typeID=vehicle.vehicle_type.id,
+                            departLane=selected_lane.id.split("_")[-1],
+                            departSpeed="0",
+                            departPos="0"
+                        )
+                        traci.vehicle.setLaneChangeMode(vehicle.id, 256)
+                        traci.vehicle.setSpeedMode(vehicle.id, 0)
+
                     rendered_vehicles.add(vehicle.id)
                     print(f"[ADD VEH] {vehicle.id} 添加成功，路线 {selected_route.id}")
                 except Exception as e:

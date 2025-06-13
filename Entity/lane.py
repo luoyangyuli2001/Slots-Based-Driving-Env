@@ -1,4 +1,4 @@
-# Entity/Lane.py
+# Entity/lane.py
 
 class Lane:
     def __init__(self, id, index, speed, shape, from_node=None, to_node=None, is_internal=False):

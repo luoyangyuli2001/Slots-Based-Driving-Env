@@ -10,23 +10,20 @@ class Slot:
                  speed,
                  length=8.0,
                  gap_to_previous=3.0,
-                 vehicle_id=None):
+                 vehicle_id=None,
+                 heading=0.0):
         
-        self.id = id                            # Slot 唯一标识
-        self.segment_id = segment_id            # 所属 segment ID
-        self.lane = lane                        # 所属 lane 
-        self.index = index                      # 在 lane 上的序号
-        
-        self.position_start = position_start    # 起点
-        self.length = length                    # Slot 长度，默认 8m
-        self.gap_to_previous = gap_to_previous  # 与前 slot 间隔，默认 3m
+        self.id = id
+        self.segment_id = segment_id
+        self.lane = lane
+        self.index = index
+        self.position_start = position_start
+        self.length = length
+        self.gap_to_previous = gap_to_previous
         self.speed = speed
-
-        # === 派生计算 ===
         self.position_end = self.position_start + self.length
         self.center = (self.position_start + self.position_end) / 2
-
-        # 占用信息
+        self.heading = heading  # degree 方向角（相对于SUMO坐标系）
         self.occupied = False
         self.vehicle_id = vehicle_id
 
@@ -39,7 +36,7 @@ class Slot:
         self.vehicle_id = None
 
     def __repr__(self):
-        return (f"Slot(id={self.id}, lane={self.lane_id}, index={self.index}, "
+        return (f"Slot(id={self.id}, lane={self.lane.id}, index={self.index}, "
                 f"range=({self.position_start:.2f}-{self.position_end:.2f}), "
-                f"center={self.center:.2f}, length={self.length}, gap={self.gap_to_previous}, "
+                f"center={self.center:.2f}, heading={self.heading:.2f}, "
                 f"occupied={self.occupied}, vehicle={self.vehicle_id})")

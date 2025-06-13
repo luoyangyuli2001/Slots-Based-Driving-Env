@@ -11,7 +11,7 @@ class SlotGenerator:
         self.slot_gap = slot_gap if slot_gap is not None else config.SLOT_GAP
         self.global_index = 0
 
-    def interpolate_position_from_shape(self, shape, target_distance):
+    def interpolate_position_and_heading(self, shape, target_distance):
         accumulated = 0.0
         for i in range(len(shape) - 1):
             x1, y1 = shape[i]
@@ -22,11 +22,18 @@ class SlotGenerator:
 
             if accumulated + segment_length >= target_distance:
                 ratio = (target_distance - accumulated) / segment_length
-                return x1 + ratio * dx, y1 + ratio * dy
+                x = x1 + ratio * dx
+                y = y1 + ratio * dy
+                heading = math.degrees(math.atan2(dy, dx))
+                return (x, y), heading
 
             accumulated += segment_length
 
-        return shape[-1]
+        # fallback (最后一个点)
+        x1, y1 = shape[-2]
+        x2, y2 = shape[-1]
+        heading = math.degrees(math.atan2(y2 - y1, x2 - x1))
+        return shape[-1], heading
 
     def generate_slots_for_full_lane(self, full_lane):
         slots = []
@@ -40,6 +47,9 @@ class SlotGenerator:
             slot_id = f"slot_{self.global_index}"
             self.global_index += 1
 
+            center_pos = position + self.slot_length / 2
+            center_xy, heading = self.interpolate_position_and_heading(shape, center_pos)
+
             slot = Slot(
                 id=slot_id,
                 lane=lane,
@@ -48,9 +58,10 @@ class SlotGenerator:
                 position_start=position,
                 length=self.slot_length,
                 gap_to_previous=self.slot_gap,
-                speed=speed
+                speed=speed,
+                heading=heading
             )
-            slot.center = self.interpolate_position_from_shape(shape, position + self.slot_length / 2)
+            slot.center = center_xy
             slots.append(slot)
 
             position += self.slot_length + self.slot_gap
@@ -60,13 +71,14 @@ class SlotGenerator:
         return slots
 
     def generate_single_slot_on_full_lane(self, full_lane: FullLane) -> Slot:
-        """
-        在 full_lane 起点处生成一个 slot（用于再生）
-        """
         slot_id = f"slot_{self.global_index}"
         self.global_index += 1
         lane = full_lane.lanes[0]
-        return Slot(
+
+        center_pos = 0.0 + self.slot_length / 2
+        center_xy, heading = self.interpolate_position_and_heading(full_lane.full_shape, center_pos)
+
+        slot = Slot(
             id=slot_id,
             lane=lane,
             segment_id=lane.segment_id,
@@ -74,8 +86,11 @@ class SlotGenerator:
             position_start=0.0,
             length=self.slot_length,
             gap_to_previous=self.slot_gap,
-            speed=lane.speed
+            speed=lane.speed,
+            heading=heading
         )
+        slot.center = center_xy
+        return slot
 
     def generate_slots_for_all_full_lanes(self, full_lanes):
         all_slots = []
@@ -84,66 +99,3 @@ class SlotGenerator:
             full_lane.slots = slots
             all_slots.extend(slots)
         return all_slots
-
-
-# === 以下为旧实现，保留作参考（基于 Lane 而非 FullLane） ===
-
-# def generate_single_slot_on_lane(lane, slot_length=8.0, slot_gap=3.0):
-#     global global_index
-#     slot_id = f"slot_{global_index}"
-#     global_index += 1
-#     return Slot(
-#         id=slot_id,
-#         lane=lane,
-#         index=-1,
-#         position_start=0.0,
-#         length=slot_length,
-#         gap_to_previous=slot_gap,
-#         segment_id=lane.segment_id,
-#         speed=lane.speed
-#     )
-
-
-# def generate_slots_for_lane(lane, slot_length=8.0, slot_gap=3.0):
-#     global global_index
-#     slots = []
-#     lane_length = lane.length
-#     step = slot_length + slot_gap
-#     num_slots = int(math.floor(lane_length / step))
-#     shape = traci.lane.getShape(lane.id)
-
-#     for i in range(num_slots):
-#         global_index += 1
-#         start_pos = i * step
-#         slot_id = f"slot_{global_index}"
-
-#         slot = Slot(
-#             id=slot_id,
-#             segment_id=lane.segment_id,
-#             lane=lane,
-#             index=global_index,
-#             position_start=start_pos,
-#             length=slot_length,
-#             gap_to_previous=slot_gap,
-#             speed=lane.speed
-#         )
-#         slot.center = interpolate_position_from_shape(shape, slot.center)
-#         slots.append(slot)
-
-#     return slots
-
-
-# def generate_slots_for_all_segments(segments, slot_length=8.0, slot_gap=3.0):
-#     all_slots = []
-#     for segment in segments:
-#         if segment.segment_type != "standard":
-#             continue
-#         for lane in segment.lanes:
-#             lane.segment_id = segment.id
-#             lane_slots = generate_slots_for_lane(
-#                 lane,
-#                 slot_length=slot_length,
-#                 slot_gap=slot_gap
-#             )
-#             all_slots.extend(lane_slots)
-#     return all_slots

@@ -54,6 +54,15 @@ Known Issues
 1. Slot-to-slot transmission across segments may incur 1-step visual delay due to time_step granularity  
 2. SUMO uses a left-hand traffic default; visual alignment of right-hand lane logic requires manual offset correction
 
+Standard Sumo Naming Rules
+------------
+Forward road node: n1, n2, n3; 
+Reverse road node: -n1, -n2, -n3
+Ramp: on_ramp1, off_ramp1 (reverse: -on_ramp1, -off_ramp1)
+Main roads: e1 to e6 (reverse: -e1 to -e6)
+Internal edges follow SUMO’s default naming, e.g., :n3_1_0
+
+
 Future Plans
 ------------
 - Slot lifecycle control (recycle, regeneration)

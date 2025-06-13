@@ -34,9 +34,11 @@ class SlotController:
                 if slot.position_start >= total_length:
                     removed_slots.append((slot, fl))
                 else:
-                    # 实时更新 center 坐标
+                    # 更新 center 与 heading
                     center_pos = slot.position_start + slot.length / 2
-                    slot.center = self.interpolate(shape, center_pos)
+                    center_xy, heading = self.interpolate_position_and_heading(shape, center_pos)
+                    slot.center = center_xy
+                    slot.heading = heading
                     updated_slots.append(slot)
 
             # === 再生逻辑 ===
@@ -48,7 +50,7 @@ class SlotController:
 
             if allow_insert:
                 new_slot = self.slot_generator.generate_single_slot_on_full_lane(fl)
-                new_slot.center = self.interpolate(shape, new_slot.position_start + new_slot.length / 2)
+                new_slot.center, new_slot.heading = self.interpolate_position_and_heading(shape, new_slot.length / 2)
                 updated_slots.insert(0, new_slot)
 
             # 排序：确保 slot 始终按 position_start 升序排列
@@ -58,10 +60,9 @@ class SlotController:
 
         return removed_slots
 
-    @staticmethod
-    def interpolate(shape, target_distance):
+    def interpolate_position_and_heading(self, shape, target_distance):
         """
-        在 shape 上插值计算目标距离对应的坐标
+        插值并计算当前位置与切线方向 (heading in degrees)
         """
         accumulated = 0.0
         for i in range(len(shape) - 1):
@@ -69,9 +70,19 @@ class SlotController:
             x2, y2 = shape[i + 1]
             dx = x2 - x1
             dy = y2 - y1
-            seg_len = math.hypot(dx, dy)
-            if accumulated + seg_len >= target_distance:
-                ratio = (target_distance - accumulated) / seg_len
-                return (x1 + dx * ratio, y1 + dy * ratio)
-            accumulated += seg_len
-        return shape[-1]  # fallback
+            segment_length = math.hypot(dx, dy)
+
+            if accumulated + segment_length >= target_distance:
+                ratio = (target_distance - accumulated) / segment_length
+                x = x1 + ratio * dx
+                y = y1 + ratio * dy
+                heading = math.degrees(math.atan2(dy, dx))
+                return (x, y), heading
+
+            accumulated += segment_length
+
+        # fallback 到最后一个segment尾部
+        x1, y1 = shape[-2]
+        x2, y2 = shape[-1]
+        heading = math.degrees(math.atan2(y2 - y1, x2 - x1))
+        return shape[-1], heading

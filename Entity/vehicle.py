@@ -1,6 +1,8 @@
 # Entity/vehicle.py
 
 from enum import Enum
+import math
+import traci
 from Entity.slot import Slot
 from Entity.route import Route
 
@@ -40,3 +42,20 @@ class Vehicle:
 
     def __repr__(self):
         return f"Vehicle(id={self.id}, route={self.route.id}, slot={self.current_slot.id})"
+
+    def get_current_center_position(self):
+        """
+        实时获取车辆几何中心位置（slot.center参考系）
+        """
+        try:
+            x_front, y_front = traci.vehicle.getPosition(self.id)
+            heading_deg = traci.vehicle.getAngle(self.id)
+            heading_rad = math.radians(heading_deg)
+            vehicle_length = traci.vehicle.getLength(self.id)
+
+            x_center = x_front - (vehicle_length / 2.0) * math.cos(heading_rad)
+            y_center = y_front - (vehicle_length / 2.0) * math.sin(heading_rad)
+            return x_center, y_center
+        except Exception as e:
+            # 若在仿真外调用 (如未加入仿真中)，返回 None
+            return None
