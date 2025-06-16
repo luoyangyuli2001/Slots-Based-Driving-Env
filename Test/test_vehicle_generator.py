@@ -78,7 +78,7 @@ if __name__ == "__main__":
     merge_controller = MergeController(full_lanes, ramp_to_fulllane_map, safety_gap=5.0)
 
     print("[TEST] 开始动态添加车辆并更新 slot")
-    for step in range(500):
+    for step in range(5000):
         traci.simulationStep()
 
         # 推进 slot 并获取移除项
