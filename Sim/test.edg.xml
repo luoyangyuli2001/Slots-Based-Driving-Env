@@ -7,9 +7,10 @@
         <lane index="1" speed="27.78" width="3.2"/>
     </edge>
     <!-- 反向主路 -e1 -->
-    <edge id="-e1" from="-n2" to="-n1" numLanes="2">
-        <lane index="0" speed="22.22" width="3.2"/>
-        <lane index="1" speed="27.78" width="3.2"/>
+    <edge id="-e1" from="-n2" to="-n1" numLanes="3">
+        <lane index="0" speed="16.67" width="3.2"/>
+        <lane index="1" speed="22.22" width="3.2"/>
+        <lane index="2" speed="27.78" width="3.2"/>
     </edge>
 
     <!-- 正向主路 e2 -->
