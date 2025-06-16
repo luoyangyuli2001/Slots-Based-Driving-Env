@@ -1,5 +1,3 @@
-# Test/test_vehicle_generator.py
-
 import os
 import sys
 import time
@@ -19,6 +17,8 @@ from Tools.utils import generate_temp_cfg
 from Controller.slot_generator import SlotGenerator
 from Controller.slot_controller import SlotController
 from Controller.vehicle_generator import VehicleGenerator
+from Controller.merge_controller import MergeController
+from Controller.vehicle_controller import VehicleController
 
 # SUMO 配置路径
 SUMO_BINARY = "sumo-gui"
@@ -53,6 +53,7 @@ if __name__ == "__main__":
 
     rendered_slots = set()
     rendered_vehicles = set()
+    vehicle_list = []
 
     # 初始 slot 可视化
     for fl in full_lanes:
@@ -66,12 +67,28 @@ if __name__ == "__main__":
                 except:
                     pass
 
+    # 初始化车辆控制器
+    vehicle_controller = VehicleController(vehicle_list)
+
+    # 初始化合流控制器
+    ramp_to_fulllane_map = {
+        "on_ramp1": "e2_0",
+        "-on_ramp1": "-e6_0"
+    }
+    merge_controller = MergeController(full_lanes, ramp_to_fulllane_map, safety_gap=5.0)
+
     print("[TEST] 开始动态添加车辆并更新 slot")
     for step in range(500):
         traci.simulationStep()
 
         # 推进 slot 并获取移除项
         removed = slot_controller.step()
+
+        # === 车辆控制器实时更新车辆状态 ===
+        vehicle_controller.step()
+
+        # === 合流控制器实时检查合流 ===
+        merge_controller.step(vehicle_list)
 
         # 更新现有 slot 坐标或添加新 slot
         for fl in full_lanes:
@@ -161,31 +178,20 @@ if __name__ == "__main__":
                         # 即使路口有人，也要闯红灯 [0 1 0 0 1 1 1] = 39（也需要 setSpeed 或 slowDown）
 
                         traci.vehicle.setSpeedMode(vehicle.id, 0)
-                        # 指定速度为车道速度
                         traci.vehicle.setSpeed(vehicle.id, vehicle.speed)
 
-                        # === 使用slot.heading进行精确放置 ===
+                        # === 使用 slot.heading 进行精确放置 ===
                         vehicle_length = vehicle.vehicle_type.length
                         heading_rad = math.radians(slot.heading)
-
                         x_center, y_center = slot.center
                         x_front = x_center + (vehicle_length / 2.0) * math.cos(heading_rad)
                         y_front = y_center + (vehicle_length / 2.0) * math.sin(heading_rad)
 
                         edge_id = slot.lane.id.rsplit("_", 1)[0]
                         lane_index = int(slot.lane.id.rsplit("_", 1)[-1])
-
-                        # 精确定位到 slot 中心
-                        edge_id = slot.lane.id.rsplit("_", 1)[0]
-                        lane_index = int(slot.lane.id.rsplit("_", 1)[-1])
                         traci.vehicle.moveToXY(
-                            vehicle.id,
-                            edgeID=edge_id,
-                            laneIndex=lane_index,
-                            x=x_front,
-                            y=y_front,
-                            angle=slot.heading,
-                            keepRoute=1
+                            vehicle.id, edgeID=edge_id, laneIndex=lane_index,
+                            x=x_front, y=y_front, angle=slot.heading, keepRoute=1
                         )
                     else:
                         traci.vehicle.add(
@@ -200,6 +206,8 @@ if __name__ == "__main__":
                         traci.vehicle.setSpeedMode(vehicle.id, 0)
 
                     rendered_vehicles.add(vehicle.id)
+                    vehicle_list.append(vehicle)
+
                     print(f"[ADD VEH] {vehicle.id} 添加成功，路线 {selected_route.id}")
                 except Exception as e:
                     print(f"[WARN] 添加 {vehicle.id} 失败：{e}")

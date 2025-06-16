@@ -127,10 +127,10 @@
         <lane id="-e6_2" index="2" speed="27.78" length="254.72" width="3.20" shape="1500.31,146.43 1250.31,97.63"/>
     </edge>
     <edge id="-off_ramp1" from="-n3" to="-off_ramp1" priority="-1">
-        <lane id="-off_ramp1_0" index="0" speed="16.67" length="125.58" width="3.20" shape="490.28,87.30 401.13,-1.14"/>
+        <lane id="-off_ramp1_0" index="0" speed="11.11" length="125.58" width="3.20" shape="490.28,87.30 401.13,-1.14"/>
     </edge>
     <edge id="-on_ramp1" from="-on_ramp1" to="-n5" priority="-1">
-        <lane id="-on_ramp1_0" index="0" speed="16.67" length="160.93" width="3.20" shape="1149.12,-1.33 1014.88,87.44"/>
+        <lane id="-on_ramp1_0" index="0" speed="11.11" length="160.93" width="3.20" shape="1149.12,-1.33 1014.88,87.44"/>
     </edge>
     <edge id="e1" from="n1" to="n2" priority="-1">
         <lane id="e1_0" index="0" speed="22.22" length="246.00" width="3.20" shape="0.00,105.60 246.00,105.60"/>
@@ -162,10 +162,10 @@
         <lane id="e6_2" index="2" speed="27.78" length="253.86" width="3.20" shape="1250.61,102.55 1499.69,151.57"/>
     </edge>
     <edge id="off_ramp1" from="n5" to="off_ramp1" priority="-1">
-        <lane id="off_ramp1_0" index="0" speed="16.67" length="160.93" width="3.20" shape="1014.88,112.56 1149.12,201.33"/>
+        <lane id="off_ramp1_0" index="0" speed="11.11" length="160.93" width="3.20" shape="1014.88,112.56 1149.12,201.33"/>
     </edge>
     <edge id="on_ramp1" from="on_ramp1" to="n3" priority="-1">
-        <lane id="on_ramp1_0" index="0" speed="16.67" length="125.58" width="3.20" shape="401.13,201.14 490.28,112.70"/>
+        <lane id="on_ramp1_0" index="0" speed="11.11" length="125.58" width="3.20" shape="401.13,201.14 490.28,112.70"/>
     </edge>
 
     <junction id="-n1" type="dead_end" x="0.00" y="99.20" incLanes="-e1_0 -e1_1" intLanes="" shape="0.00,92.80 0.00,99.20"/>

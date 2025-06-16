@@ -59,3 +59,14 @@ class Vehicle:
         except Exception as e:
             # 若在仿真外调用 (如未加入仿真中)，返回 None
             return None
+
+    def get_front_position(self):
+        """
+        直接通过 TraCI 获取车辆当前前保险杠位置
+        """
+        try:
+            pos = traci.vehicle.getPosition(self.id)
+            return pos  # 返回前保险杠中心位置 (x, y)
+        except:
+            return (0.0, 0.0)
+
