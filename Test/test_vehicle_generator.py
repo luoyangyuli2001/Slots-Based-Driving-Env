@@ -37,6 +37,7 @@ if __name__ == "__main__":
 
     route_parser = RouteXMLParser(ROUTE_FILE)
     routes = route_parser.get_routes()
+    route_groups = route_parser.get_route_groups()
     default_vtype = route_parser.get_default_vehicle_type()
 
     # 启动 SUMO
@@ -68,13 +69,14 @@ if __name__ == "__main__":
                     pass
 
     # 初始化车辆控制器
-    vehicle_controller = VehicleController(vehicle_list)
+    vehicle_controller = VehicleController(vehicle_list, route_groups)
 
     # 初始化合流控制器
     ramp_to_fulllane_map = {
         "on_ramp1": "e2_0",
         "-on_ramp1": "-e6_0"
     }
+
     merge_controller = MergeController(full_lanes, ramp_to_fulllane_map, safety_gap=5.0)
 
     print("[TEST] 开始动态添加车辆并更新 slot")
