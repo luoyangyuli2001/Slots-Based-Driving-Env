@@ -1,4 +1,4 @@
-# Test/test_vehicle_generator.py
+# Test/test_vehicle_controller.py
 
 import os
 import sys
@@ -122,7 +122,7 @@ if __name__ == "__main__":
                 pass
 
         # 每 30 步添加一个车辆（仅示范）
-        if step % 30 == 0:
+        if step == 30:
             selected_route = vehicle_generator.select_random_route()
             entry_edge = selected_route.edges[0]
 
@@ -215,6 +215,19 @@ if __name__ == "__main__":
                     print(f"[ADD VEH] {vehicle.id} 添加成功，路线 {selected_route.id}")
                 except Exception as e:
                     print(f"[WARN] 添加 {vehicle.id} 失败：{e}")
+
+        if len(vehicle_list) == 1:
+            target_vehicle = vehicle_list[0]
+
+        # === 在第 100 步执行前进（动作1）===
+        if step == 200 and target_vehicle and target_vehicle.current_slot:
+            print("[ACTION] 执行 slot 前进动作 1")
+            vehicle_controller.execute_slot_action(target_vehicle.current_slot, 1)
+
+        # === 在第 200 步执行后退（动作2）===
+        if step == 300 and target_vehicle and target_vehicle.current_slot:
+            print("[ACTION] 执行 slot 后退动作 2")
+            vehicle_controller.execute_slot_action(target_vehicle.current_slot, 2)
 
     traci.close()
     print("[TEST] 测试完成")

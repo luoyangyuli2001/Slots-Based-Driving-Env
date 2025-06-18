@@ -6,7 +6,7 @@ import math
 class VehicleController:
     def __init__(self, vehicle_list, route_groups):
         self.vehicle_list = vehicle_list
-        self.route_groups = route_groups  # 字典结构，如 {"main_forward": [route_offramp1, route_main]}
+        self.route_groups = route_groups  # 字典结构，如 {"main_forward": [...], ...}
 
     def step(self):
         to_remove = []
@@ -16,7 +16,6 @@ class VehicleController:
             slot = vehicle.current_slot
 
             try:
-                # 若车辆已不在 SUMO 中，移除
                 if veh_id not in traci.vehicle.getIDList():
                     to_remove.append(vehicle)
                     continue
@@ -41,42 +40,48 @@ class VehicleController:
 
                 # ======= Reroute 检测逻辑 =======
                 route_id = traci.vehicle.getRouteID(veh_id)
-                route_info = self._parse_route_id(route_id)
-                if not route_info:
-                    continue
+                if route_id.startswith("route_"):
+                    parts = route_id.split("_")
+                    is_reverse = parts[-1] == "r"
+                    entry = parts[1]
+                    group_key = f"{entry}_{'reverse' if is_reverse else 'forward'}"
+                    if group_key in self.route_groups:
+                        route_list = self.route_groups[group_key]
+                        if route_id in route_list:
+                            current_index = route_list.index(route_id)
+                            if current_index < len(route_list) - 1:
+                                route_edges = traci.vehicle.getRoute(veh_id)
+                                current_edge_index = route_edges.index(current_edge) if current_edge in route_edges else -1
+                                if current_edge_index == len(route_edges) - 2:
+                                    pos_on_lane = traci.vehicle.getLanePosition(veh_id)
+                                    lane_id = traci.vehicle.getLaneID(veh_id)
+                                    lane_length = traci.lane.getLength(lane_id)
+                                    distance_to_end = lane_length - pos_on_lane
 
-                group_key = route_info["group_key"]
-                if group_key not in self.route_groups:
-                    continue
+                                    if distance_to_end < 50:
+                                        lane_index = int(lane_id.split("_")[-1])
+                                        if lane_index != 0:
+                                            new_route_id = route_list[current_index + 1]
+                                            traci.vehicle.setRouteID(veh_id, new_route_id)
+                                            print(f"[REROUTE] 车辆 {veh_id} 从 {route_id} -> {new_route_id}")
 
-                route_list = self.route_groups[group_key]
-                if route_id not in route_list:
-                    continue
-
-                current_index = route_list.index(route_id)
-                # 若还未是最终 route，才允许 reroute
-                if current_index < len(route_list) - 1:
-                    # 检测是否临近 off-ramp，仍未靠边
-                    route_edges = traci.vehicle.getRoute(veh_id)
-                    current_edge = traci.vehicle.getRoadID(veh_id)
-                    current_edge_index = route_edges.index(current_edge) if current_edge in route_edges else -1
-
-                    if current_edge_index == len(route_edges) - 2:
-                        # 到达倒数第二个 edge，检查 lane index
-                        lane_id = traci.vehicle.getLaneID(veh_id)
-                        lane_index = int(lane_id.split("_")[-1])
-                        if lane_index != 0:
-                            # 执行 reroute
-                            new_route_id = route_list[current_index + 1]
-                            traci.vehicle.setRouteID(veh_id, new_route_id)
-                            print(f"[REROUTE] 车辆 {veh_id} 从 {route_id} -> {new_route_id}")
+                # ======= 动作完成检查：释放 previous_slot =======
+                if vehicle.previous_slot:
+                    new_slot = vehicle.current_slot
+                    dx = new_slot.center[0] - center_x
+                    dy = new_slot.center[1] - center_y
+                    new_slot_heading_rad = math.radians(new_slot.heading)
+                    dist = dx * math.cos(new_slot_heading_rad) + dy * math.sin(new_slot_heading_rad)
+                    if abs(dist) < 1:  # 阈值可调
+                        vehicle.previous_slot.release()
+                        print(f"[ACTION] 车辆 {vehicle.id} 动作完成，释放 slot {vehicle.previous_slot.id}")
+                        vehicle.previous_slot = None
 
                 # ======= Slot 同步控制 =======
                 if vehicle.current_slot:
                     slot = vehicle.current_slot
                     dx = slot.center[0] - center_x
                     dy = slot.center[1] - center_y
-
                     slot_heading_rad = math.radians(slot.heading)
                     delta_along = dx * math.cos(slot_heading_rad) + dy * math.sin(slot_heading_rad)
 
@@ -101,27 +106,55 @@ class VehicleController:
             self.vehicle_list.remove(v)
             print(f"[CLEAN] 移除车辆 {v.id}")
 
-    def _parse_route_id(self, route_id: str):
+    def _get_vehicle_by_slot(self, slot):
+        for vehicle in self.vehicle_list:
+            if vehicle.id == slot.vehicle_id:
+                return vehicle
+        return None
+
+    def execute_slot_action(self, slot, action_id: int):
+        vehicle_id = slot.vehicle_id
+        if vehicle_id is None:
+            print(f"[SKIP] slot {slot.id} 无车辆绑定，无法执行动作 {action_id}")
+            return
+        vehicle = self._get_vehicle_by_slot(slot)
+        self.perform_action(vehicle, action_id)
+
+    def perform_action(self, vehicle, action_id: int):
         """
-        将 route_id 拆分为 entry、exit 和方向等字段。
-        例如 route_main_offramp1_r => entry=main, exit=offramp1, is_reverse=True
-        返回 None 表示无法解析。
+        车辆动作执行函数：
+        0: 保持当前 slot（默认）
+        1: 前进至前一个 slot
+        2: 后退至后一个 slot
         """
-        if not route_id.startswith("route_"):
-            return None
 
-        parts = route_id.split("_")
-        if len(parts) < 3:
-            return None
+        slot = vehicle.current_slot
+        if not slot or not hasattr(slot, "full_lane") or slot.full_lane is None:
+            print(f"[SKIP] 车辆 {vehicle.id} 无绑定 slot，跳过动作 {action_id}")
+            return
 
-        entry = parts[1]
-        exit = parts[2]
-        is_reverse = parts[-1] == "r"
-        group_key = f"{entry}_{'reverse' if is_reverse else 'forward'}"
+        full_lane = slot.full_lane
+        slots = full_lane.slots
 
-        return {
-            "entry": entry,
-            "exit": exit,
-            "is_reverse": is_reverse,
-            "group_key": group_key
-        }
+        try:
+            current_pos = next(i for i, s in enumerate(slots) if s.id == slot.id)
+        except StopIteration:
+            print(f"[ERROR] slot {slot.id} 未在 full_lane 中找到，跳过动作")
+            return
+
+        if action_id == 1 and current_pos + 1 < len(slots):
+            new_slot = slots[current_pos + 1]
+            vehicle.previous_slot = slot  # 不立即释放旧 slot
+            vehicle.current_slot = new_slot
+            new_slot.occupy(vehicle.id)
+            print(f"[ACTION] 车辆 {vehicle.id} 前进至 slot {new_slot.id}，等待动作完成")
+
+        elif action_id == 2 and current_pos - 1 >= 0:
+            new_slot = slots[current_pos - 1]
+            vehicle.previous_slot = slot
+            vehicle.current_slot = new_slot
+            new_slot.occupy(vehicle.id)
+            print(f"[ACTION] 车辆 {vehicle.id} 后退至 slot {new_slot.id}，等待动作完成")
+
+        else:
+            print(f"[ACTION] 未知或非法动作 {action_id}，当前仅支持 0-2")

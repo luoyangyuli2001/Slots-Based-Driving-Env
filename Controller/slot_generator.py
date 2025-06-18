@@ -59,7 +59,8 @@ class SlotGenerator:
                 length=self.slot_length,
                 gap_to_previous=self.slot_gap,
                 speed=speed,
-                heading=heading
+                heading=heading,
+                full_lane=full_lane,
             )
             slot.center = center_xy
             slots.append(slot)
@@ -87,7 +88,8 @@ class SlotGenerator:
             length=self.slot_length,
             gap_to_previous=self.slot_gap,
             speed=lane.speed,
-            heading=heading
+            heading=heading,
+            full_lane=full_lane,
         )
         slot.center = center_xy
         return slot

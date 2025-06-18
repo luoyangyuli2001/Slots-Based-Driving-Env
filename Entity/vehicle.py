@@ -39,6 +39,7 @@ class Vehicle:
         self.speed = speed
         self.position = position
         self.status = status
+        self.previous_slot = None
 
     def __repr__(self):
         return f"Vehicle(id={self.id}, route={self.route.id}, slot={self.current_slot.id})"

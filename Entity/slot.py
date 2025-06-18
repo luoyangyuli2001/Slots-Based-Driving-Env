@@ -11,7 +11,8 @@ class Slot:
                  length=8.0,
                  gap_to_previous=3.0,
                  vehicle_id=None,
-                 heading=0.0):
+                 heading=0.0,
+                 full_lane=None):
         
         self.id = id
         self.segment_id = segment_id
@@ -26,6 +27,7 @@ class Slot:
         self.heading = heading  # degree 方向角（相对于SUMO坐标系）
         self.occupied = False
         self.vehicle_id = vehicle_id
+        self.full_lane = full_lane
 
     def occupy(self, vehicle_id):
         self.occupied = True
