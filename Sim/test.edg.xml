@@ -1,100 +1,101 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <edges>
 
-    <!-- 正向主路 e1 -->
+    <!-- Forward Main Road e1: 2 lanes with increasing speed from left to right -->
     <edge id="e1" from="n1" to="n2" numLanes="2">
         <lane index="0" speed="22.22" width="3.2"/>
         <lane index="1" speed="27.78" width="3.2"/>
     </edge>
-    <!-- 反向主路 -e1 -->
+    <!-- Reverse Main Road -e1: 3 lanes -->
     <edge id="-e1" from="-n2" to="-n1" numLanes="3">
         <lane index="0" speed="16.67" width="3.2"/>
         <lane index="1" speed="22.22" width="3.2"/>
         <lane index="2" speed="27.78" width="3.2"/>
     </edge>
 
-    <!-- 正向主路 e2 -->
+    <!-- Forward Main Road e2: 3 lanes -->
     <edge id="e2" from="n2" to="n3" numLanes="3">
         <lane index="0" speed="16.67" width="3.2"/>
         <lane index="1" speed="22.22" width="3.2"/>
         <lane index="2" speed="27.78" width="3.2"/>
     </edge>
-    <!-- 反向主路 -e2 -->
+    <!-- Reverse Main Road -e2 -->
     <edge id="-e2" from="-n3" to="-n2" numLanes="3">
         <lane index="0" speed="16.67" width="3.2"/>
         <lane index="1" speed="22.22" width="3.2"/>
         <lane index="2" speed="27.78" width="3.2"/>
     </edge>
 
-    <!-- 正向主路 e3 -->
+    <!-- Forward Main Road e3: 3 lanes -->
     <edge id="e3" from="n3" to="n4" numLanes="3">
         <lane index="0" speed="16.67" width="3.2"/>
         <lane index="1" speed="22.22" width="3.2"/>
         <lane index="2" speed="27.78" width="3.2"/>
     </edge>
-    <!-- 反向主路 -e3 -->
+    <!-- Reverse Main Road -e3 -->
     <edge id="-e3" from="-n4" to="-n3" numLanes="3">
         <lane index="0" speed="16.67" width="3.2"/>
         <lane index="1" speed="22.22" width="3.2"/>
         <lane index="2" speed="27.78" width="3.2"/>
     </edge>
 
-    <!-- 正向主路 e4 -->
+    <!-- Forward Main Road e4: 3 lanes -->
     <edge id="e4" from="n4" to="n5" numLanes="3">
         <lane index="0" speed="16.67" width="3.2"/>
         <lane index="1" speed="22.22" width="3.2"/>
         <lane index="2" speed="27.78" width="3.2"/>
     </edge>
-    <!-- 反向主路 -e4 -->
+    <!-- Reverse Main Road -e4 -->
     <edge id="-e4" from="-n5" to="-n4" numLanes="3">
         <lane index="0" speed="16.67" width="3.2"/>
         <lane index="1" speed="22.22" width="3.2"/>
         <lane index="2" speed="27.78" width="3.2"/>
     </edge>
 
-    <!-- 正向主路 e5 -->
+    <!-- Forward Main Road e5: 3 lanes -->
     <edge id="e5" from="n5" to="n6" numLanes="3">
         <lane index="0" speed="16.67" width="3.2"/>
         <lane index="1" speed="22.22" width="3.2"/>
         <lane index="2" speed="27.78" width="3.2"/>
     </edge>
-    <!-- 反向主路 -e5 -->
+    <!-- Reverse Main Road -e5 -->
     <edge id="-e5" from="-n6" to="-n5" numLanes="3">
         <lane index="0" speed="16.67" width="3.2"/>
         <lane index="1" speed="22.22" width="3.2"/>
         <lane index="2" speed="27.78" width="3.2"/>
     </edge>
 
-    <!-- 正向主路 e6 -->
+    <!-- Forward Main Road e6: 3 lanes -->
     <edge id="e6" from="n6" to="n7" numLanes="3">
         <lane index="0" speed="16.67" width="3.2"/>
         <lane index="1" speed="22.22" width="3.2"/>
         <lane index="2" speed="27.78" width="3.2"/>
     </edge>
-    <!-- 反向主路 -e6 -->
+    <!-- Reverse Main Road -e6 -->
     <edge id="-e6" from="-n7" to="-n6" numLanes="3">
         <lane index="0" speed="16.67" width="3.2"/>
         <lane index="1" speed="22.22" width="3.2"/>
         <lane index="2" speed="27.78" width="3.2"/>
     </edge>
 
-    <!-- on_ramp1 连接正向 -->
+    <!-- Forward On-Ramp 1: merges into main road at n3 -->
     <edge id="on_ramp1" from="on_ramp1" to="n3" numLanes="1">
         <lane index="0" speed="16.67" width="3.2"/>
     </edge>
 
-    <!-- off_ramp1 连接正向 -->
+    <!-- Forward Off-Ramp 1: exits from main road at n5 -->
     <edge id="off_ramp1" from="n5" to="off_ramp1" numLanes="1">
         <lane index="0" speed="16.67" width="3.2"/>
     </edge>
 
-    <!-- -off_ramp1 连接反向 -->
+    <!-- Reverse Off-Ramp 1: exits from reverse main road at -n3 -->
     <edge id="-off_ramp1" from="-n3" to="-off_ramp1" numLanes="1">
         <lane index="0" speed="16.67" width="3.2"/>
     </edge>
 
-    <!-- -on_ramp1 连接反向 -->
+    <!-- Reverse On-Ramp 1: merges into reverse main road at -n5 -->
     <edge id="-on_ramp1" from="-on_ramp1" to="-n5" numLanes="1">
         <lane index="0" speed="16.67" width="3.2"/>
     </edge>
+
 </edges>

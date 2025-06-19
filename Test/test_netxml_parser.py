@@ -5,7 +5,7 @@ import os
 import random
 import sys
 
-# 添加项目根目录到 sys.path 便于进行测试
+# Add project root to sys.path for module imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.append(project_root)
@@ -13,17 +13,18 @@ sys.path.append(project_root)
 from Sumo.sumo_netxml_parser import NetXMLParser
 
 
-# ==== SUMO 配置 ====
-SUMO_BINARY = "sumo-gui"  # 如果不需要图形界面可改为 "sumo"
+# ==== SUMO Configuration ====
+SUMO_BINARY = "sumo-gui"  # Use "sumo" if GUI is not needed
 NET_FILE = os.path.join("Sim", "joined_segments.net.xml")
 RELATIVE_NET_FILE = "joined_segments.net.xml"
 SUMOCFG_FILE = os.path.join("Sim", "temp.sumocfg")
 
-# ==== 路线定义（基于 edge ID） ====
+# ==== Example Route Definitions (based on edge IDs) ====
 ROUTE_STANDARD_TO_OFFRAMP = ["e1", "e2", "e3", "e4", "exit1"]
 ROUTE_ONRAMP_TO_EXIT = ["ramp1", "e3", "e4", "e5"]
 
-# ==== STEP 1: 生成配置文件 ====
+
+# ==== STEP 1: Generate Temporary SUMO Configuration File ====
 def generate_temp_cfg(net_file, cfg_path):
     with open(cfg_path, "w") as f:
         f.write(
@@ -38,9 +39,10 @@ def generate_temp_cfg(net_file, cfg_path):
                 </time>
             </configuration>
             """)
-    print(f"[INFO] 已生成 SUMO 配置文件：{cfg_path}")
+    print(f"[INFO] Temporary SUMO config file generated: {cfg_path}")
 
-# ==== STEP 2: 获取用于生成车辆的 lane ====
+
+# ==== STEP 2: Select Lanes for Vehicle Generation by Segment Type ====
 def get_spawn_lanes_by_type(segments, segment_type, exact_edge_id=None):
     lanes = []
     for seg in segments:
@@ -49,9 +51,10 @@ def get_spawn_lanes_by_type(segments, segment_type, exact_edge_id=None):
                 lanes.extend(seg.lanes)
     return lanes
 
-# ==== STEP 3: 启动 TraCI 模拟 ====
+
+# ==== STEP 3: Launch SUMO Simulation and Spawn Vehicles ====
 def run_sumo_and_spawn_vehicles(spawn_lanes_standard, spawn_lanes_ramp):
-    print("[INFO] 正在启动 SUMO 仿真...")
+    print("[INFO] Launching SUMO simulation...")
     traci.start([SUMO_BINARY, "-c", SUMOCFG_FILE])
     step = 0
     veh_id = 0
@@ -60,35 +63,35 @@ def run_sumo_and_spawn_vehicles(spawn_lanes_standard, spawn_lanes_ramp):
         traci.simulationStep()
 
         if step % 10 == 0:
-            # 路线 1：standard_2lane → off-ramp
+            # Route 1: standard_2lane → off-ramp
             if spawn_lanes_standard:
                 lane = random.choice(spawn_lanes_standard)
                 traci.route.add(f"route_{veh_id}", ROUTE_STANDARD_TO_OFFRAMP)
                 traci.vehicle.add(f"veh{veh_id}", f"route_{veh_id}", typeID="DEFAULT_VEHTYPE")
                 traci.vehicle.moveTo(f"veh{veh_id}", lane.id, 0.0)
-                print(f"[INFO] 添加 veh{veh_id} @ {lane.id}（标准路线）")
+                print(f"[INFO] Vehicle veh{veh_id} added at {lane.id} (Standard Route)")
                 veh_id += 1
 
-            # 路线 2：on-ramp → 右侧出口
+            # Route 2: on-ramp → right-side exit
             if spawn_lanes_ramp:
                 lane = random.choice(spawn_lanes_ramp)
                 traci.route.add(f"route_{veh_id}", ROUTE_ONRAMP_TO_EXIT)
                 traci.vehicle.add(f"veh{veh_id}", f"route_{veh_id}", typeID="DEFAULT_VEHTYPE")
                 traci.vehicle.moveTo(f"veh{veh_id}", lane.id, 0.0)
-                print(f"[INFO] 添加 veh{veh_id} @ {lane.id}（Ramp路线）")
+                print(f"[INFO] Vehicle veh{veh_id} added at {lane.id} (Ramp Route)")
                 veh_id += 1
 
         step += 1
 
     traci.close()
-    print("[INFO] 仿真结束。")
+    print("[INFO] Simulation completed.")
 
 
 if __name__ == "__main__":
     parser = NetXMLParser("Sim/test.net.xml")
     full_lanes = parser.build_full_lanes()
 
-    print(f"构建了 {len(full_lanes)} 条 FullLane：")
+    print(f"{len(full_lanes)} FullLanes constructed:")
     for fl in full_lanes:
-        print("Full Lane: ", fl.start_lane_id)
-        print("Neighbour: ", fl.neighbor_full_lanes)
+        print("FullLane Start Lane ID: ", fl.start_lane_id)
+        print("Neighbouring Lanes: ", fl.neighbor_full_lanes)

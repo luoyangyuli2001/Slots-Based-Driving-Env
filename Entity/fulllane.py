@@ -4,31 +4,56 @@ import math
 
 class FullLane:
     def __init__(self, start_lane_id):
+        """
+        Represents a complete logical lane composed of multiple connected physical lanes.
+
+        Args:
+            start_lane_id (str): The ID of the first lane in the sequence.
+        """
         self.start_lane_id = start_lane_id
-        self.lanes = []  # 顺序存储，按照行驶路径顺序
-        self.full_shape = []  # 组合而成的完整轨迹点
-        self.neighbor_full_lanes = []  # 邻接 FullLane 信息，格式: (start_x, end_x, neighbor_full_lane, direction)
+        self.lanes = []  # Ordered list of lanes following the driving direction
+        self.full_shape = []  # Combined shape points (geometry) of the full lane
+        self.neighbor_full_lanes = []  # List of neighboring FullLanes: (start_x, end_x, neighbor, direction)
 
     def add_lane(self, lane):
-        """顺序添加一个 lane，并更新 full_shape"""
+        """
+        Add a lane to the full lane in order and update the overall shape.
+
+        Args:
+            lane (Lane): A Lane instance to append to the FullLane.
+        """
         if not self.lanes:
             self.full_shape.extend(lane.shape)
         else:
             last_point = self.full_shape[-1]
             if lane.shape and lane.shape[0] == last_point:
-                self.full_shape.extend(lane.shape[1:])
+                self.full_shape.extend(lane.shape[1:])  # Avoid duplicate point
             else:
                 self.full_shape.extend(lane.shape)
         self.lanes.append(lane)
 
     def add_neighbor_full_lane(self, start_x, end_x, neighbor_full_lane, direction):
-        """注册邻接 FullLane（在 start_x 到 end_x 范围内相邻）"""
+        """
+        Register an adjacent FullLane for potential lane-changing.
+
+        Args:
+            start_x (float): Start x-coordinate of the overlapping area.
+            end_x (float): End x-coordinate of the overlapping area.
+            neighbor_full_lane (FullLane): The adjacent FullLane instance.
+            direction (int): -1 for left neighbor, 1 for right neighbor.
+        """
         self.neighbor_full_lanes.append((start_x, end_x, neighbor_full_lane, direction))
 
     def find_neighbor_slot_by_position(self, position_x, position_y):
         """
-        根据当前位置，查找邻接 FullLane 中最接近 position 的 slot
-        要求该 slot 未被占用，且位于注册的邻接区间内
+        Find the closest available slot in neighboring FullLanes at a given position.
+
+        Args:
+            position_x (float): X coordinate of the current vehicle/slot.
+            position_y (float): Y coordinate of the current vehicle/slot.
+
+        Returns:
+            Slot or None: The best candidate slot if found, otherwise None.
         """
         best_slot = None
         min_dist = float('inf')
@@ -50,7 +75,12 @@ class FullLane:
         return best_slot
 
     def get_total_length(self):
-        """计算 FullLane 的几何长度"""
+        """
+        Compute the total geometric arc length of this FullLane.
+
+        Returns:
+            float: Total length in meters.
+        """
         length = 0
         for i in range(1, len(self.full_shape)):
             x1, y1 = self.full_shape[i - 1]
@@ -59,5 +89,9 @@ class FullLane:
         return length
 
     def __repr__(self):
+        """
+        String representation of the FullLane object.
+        """
         return f"FullLane(start={self.start_lane_id}, lanes={[lane.id for lane in self.lanes]})"
-        return f"FullLane(start={self.start_lane_id}, lanes={[lane.id for lane in self.lanes]}, shape={self.full_shape})"
+        # Optional detailed representation:
+        # return f"FullLane(start={self.start_lane_id}, lanes={[lane.id for lane in self.lanes]}, shape={self.full_shape})"

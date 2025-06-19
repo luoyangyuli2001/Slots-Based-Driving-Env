@@ -9,6 +9,14 @@ from Config.config import default_config
 
 class SlotController:
     def __init__(self, slot_generator: SlotGenerator, full_lanes: List[FullLane], time_step: float = None):
+        """
+        Controls the lifecycle of slots: advancing, removing, and regenerating them.
+
+        Args:
+            slot_generator (SlotGenerator): Responsible for creating new slots.
+            full_lanes (List[FullLane]): All FullLane objects where slots exist and move.
+            time_step (float, optional): Simulation time step. If not provided, defaults to config.
+        """
         self.slot_generator = slot_generator
         self.full_lanes = full_lanes
         self.time_step = time_step if time_step is not None else default_config["time_step"]
@@ -16,8 +24,10 @@ class SlotController:
 
     def step(self) -> List[Tuple[Slot, FullLane]]:
         """
-        推进所有 slot，完成再生与移除
-        :return: 被移除的 slot 和其所属 full_lane 列表
+        Advance all slots, handle removal and regeneration.
+
+        Returns:
+            List[Tuple[Slot, FullLane]]: A list of removed slots and their corresponding FullLane.
         """
         removed_slots = []
 
@@ -27,21 +37,21 @@ class SlotController:
             updated_slots = []
 
             for slot in fl.slots:
-                # 基于 arc 长度推进
+                # Advance slot based on arc length
                 slot.position_start += slot.speed * self.time_step
                 slot.position_end = slot.position_start + slot.length
 
                 if slot.position_start >= total_length:
                     removed_slots.append((slot, fl))
                 else:
-                    # 更新 center 与 heading
+                    # Update center and heading
                     center_pos = slot.position_start + slot.length / 2
                     center_xy, heading = self.interpolate_position_and_heading(shape, center_pos)
                     slot.center = center_xy
                     slot.heading = heading
                     updated_slots.append(slot)
 
-            # === 再生逻辑 ===
+            # === Regeneration logic ===
             if not updated_slots:
                 allow_insert = True
             else:
@@ -53,7 +63,7 @@ class SlotController:
                 new_slot.center, new_slot.heading = self.interpolate_position_and_heading(shape, new_slot.length / 2)
                 updated_slots.insert(0, new_slot)
 
-            # 排序：确保 slot 始终按 position_start 升序排列
+            # Sort slots to ensure ascending order of position_start
             updated_slots.sort(key=lambda s: s.position_start)
 
             fl.slots = updated_slots
@@ -62,7 +72,14 @@ class SlotController:
 
     def interpolate_position_and_heading(self, shape, target_distance):
         """
-        插值并计算当前位置与切线方向 (heading in degrees)
+        Interpolate a position and calculate heading at a given distance along a shape polyline.
+
+        Args:
+            shape (List[Tuple[float, float]]): Polyline representing the lane geometry.
+            target_distance (float): Arc length distance along the shape.
+
+        Returns:
+            Tuple[Tuple[float, float], float]: The (x, y) position and heading (in degrees) at the given distance.
         """
         accumulated = 0.0
         for i in range(len(shape) - 1):
@@ -81,7 +98,7 @@ class SlotController:
 
             accumulated += segment_length
 
-        # fallback 到最后一个segment尾部
+        # Fallback to the end of the last segment
         x1, y1 = shape[-2]
         x2, y2 = shape[-1]
         heading = math.degrees(math.atan2(y2 - y1, x2 - x1))

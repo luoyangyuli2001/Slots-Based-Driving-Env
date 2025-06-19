@@ -1,27 +1,27 @@
 # Config/config.py
 
 default_config = {
-    # ===== SUMO 配置 =====
+    # ===== SUMO Configuration =====
     "sumo_config": "Sim/temp.sumocfg",
     "net_file": "Sim/test.net.xml",
     "route_file": "Sim/test.rou.xml",
     "use_gui": True,
 
-    # ===== 环境参数 =====
+    # ===== Environment Parameters =====
     "max_steps": 10000,
     "slot_length": 8.0,
     "slot_gap": 3.0,
-    "time_step": 0.1, #单位 秒
+    "time_step": 0.1,  # Unit: seconds
 
-    # ===== 车辆配置 =====
-    "vehicle_spawn_rate": 30,     # 每 N 步生成一辆车
-    "max_vehicles": 200,          # 同时在场景中的最大车辆数
+    # ===== Vehicle Configuration =====
+    "vehicle_spawn_rate": 30,     # Spawn one vehicle every N steps
+    "max_vehicles": 200,          # Maximum number of vehicles in the environment at the same time
     "vehicle_type": {
         "length": 5.0,
         "max_speed": 30.0
     },
 
-    # ===== 奖励相关参数（可选）=====
+    # ===== Reward Parameters (Optional) =====
     "reward": {
         "step_penalty": -0.01,
         "forward_reward": 1.0,
@@ -29,7 +29,7 @@ default_config = {
         "exit_reward": 2.0
     },
 
-    # ===== Agent 控制区域 =====
+    # ===== Agent Control Zones =====
     "multi-agent": True,
     "agent_zones": {
         "agent_0": {"xmin": 0, "xmax": 400, "ymin": 0, "ymax": 500},

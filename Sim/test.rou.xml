@@ -1,24 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <routes>
-    <!-- 车辆类型定义 -->
+    <!-- Vehicle type definition -->
     <vType id="car" accel="2.6" decel="4.5" maxSpeed="27.78" length="5.0" />
 
-    <!-- 正向方向 -->
+    <!-- Forward direction routes -->
     <route id="route_main_main" edges="e1 e2 e3 e4 e5 e6" />
     <route id="route_main_offramp1" edges="e1 e2 e3 e4 off_ramp1" />
-
-
     <route id="route_onramp1_main" edges="on_ramp1 e3 e4 e5 e6" />
     <route id="route_onramp1_offramp1" edges="on_ramp1 e3 e4 off_ramp1" />
 
-
-    <!-- 反向方向 -->
+    <!-- Reverse direction routes -->
     <route id="route_main_main_r" edges="-e6 -e5 -e4 -e3 -e2 -e1" />
     <route id="route_main_offramp1_r" edges="-e6 -e5 -e4 -e3 -off_ramp1" />
-
-
     <route id="route_onramp1_main_r" edges="-on_ramp1 -e4 -e3 -e2 -e1" />
     <route id="route_onramp1_offramp1_r" edges="-on_ramp1 -e4 -e3 -off_ramp1" />
-
-
 </routes>

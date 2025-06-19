@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <nodes>
 
-    <!-- 正向节点 -->
+    <!-- Forward direction nodes -->
     <node id="n1" x="0.0" y="0.8" type="priority"/>
     <node id="n2" x="250.0" y="0.8" type="priority"/>
     <node id="n3" x="500.0" y="0.8" type="priority"/>
@@ -10,7 +10,7 @@
     <node id="n6" x="1250.0" y="0.8" type="priority"/>
     <node id="n7" x="1500.0" y="50.0" type="priority"/>
 
-    <!-- 反向节点 -->
+    <!-- Reverse direction nodes -->
     <node id="-n1" x="0.0" y="-0.8" type="priority"/>
     <node id="-n2" x="250.0" y="-0.8" type="priority"/>
     <node id="-n3" x="500.0" y="-0.8" type="priority"/>
@@ -19,13 +19,12 @@
     <node id="-n6" x="1250.0" y="-0.8" type="priority"/>
     <node id="-n7" x="1500.0" y="48.0" type="priority"/>
 
-    <!-- 匝道节点 -->
+    <!-- On-ramp and off-ramp nodes (forward direction) -->
     <node id="on_ramp1" x="400.0" y="100.0" type="priority"/>
     <node id="off_ramp1" x="1150.0" y="100.0" type="priority"/>
 
-    <!-- 反向匝道入口 -->
+    <!-- On-ramp and off-ramp nodes (reverse direction) -->
     <node id="-on_ramp1" x="1150.0" y="-100.0" type="priority"/>
-    <!-- 反向匝道出口 -->
     <node id="-off_ramp1" x="400.0" y="-100.0" type="priority"/>
 
 </nodes>

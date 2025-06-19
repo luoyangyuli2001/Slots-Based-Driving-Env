@@ -1,14 +1,13 @@
 import gym
 import numpy as np
 import traci
-import subprocess
 import os
 import sys
 import time
 import math
 import random
 
-# 添加项目根目录到 sys.path
+# Add the project root directory to sys.path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.append(project_root)
@@ -33,7 +32,7 @@ class SlotBasedEnv(gym.Env):
         self.gui = config.get("use_gui", True)
         self.time_step = 0
 
-        # 路网与路线解析
+        # Road network and route analysis
         net_parser = NetXMLParser(config.get("net_file", "Sim/test.net.xml"))
         self.full_lanes = net_parser.build_full_lanes()
         self.lane_dict = net_parser.lane_dict
@@ -96,7 +95,7 @@ class SlotBasedEnv(gym.Env):
         return observation, info
 
     def step(self, actions=[]):
-        # ✅ 判断 multi-agent 模式
+        #  Determine multi-agent mode
         if self.config.get("multi-agent", False):
             for agent_id, agent_actions in actions.items():
                 for slot_id, action_type in agent_actions:
@@ -111,16 +110,16 @@ class SlotBasedEnv(gym.Env):
                     if slot.occupied and not slot.busy:
                         self.vehicle_controller.execute_slot_action(slot, action_type)
 
-        # 环境推进
+        # Env Step()
         traci.simulationStep()
         removed = self.slot_controller.step()
         self.vehicle_controller.step()
         self.merge_controller.step(self.vehicle_list)
 
-        # ✅ 确保 self.slot_list 是最新的
+        # Update self.slot_list
         self.slot_list = [slot for fl in self.full_lanes for slot in fl.slots]
 
-        # slot 可视化
+        # slot visualization
         for fl in self.full_lanes:
             for slot in fl.slots:
                 if slot.center:
@@ -137,7 +136,7 @@ class SlotBasedEnv(gym.Env):
                         except:
                             pass
 
-        # slot 移除
+        # slot removal
         for old_slot, _ in removed:
             try:
                 traci.poi.remove(old_slot.id)
@@ -145,13 +144,13 @@ class SlotBasedEnv(gym.Env):
             except:
                 pass
 
-        # 每 30 步添加车辆
+        # Added a vehicle per 30 steps
         if self.time_step % 30 == 0:
             selected_route = self.vehicle_generator.select_random_route()
             entry_edge = selected_route.edges[0]
             candidate_lanes = [lane for lane in self.lane_dict.values() if lane.id.startswith(entry_edge + "_")]
             if not candidate_lanes:
-                print(f"[WARN] 无法在 edge {entry_edge} 上找到可用 lane")
+                print(f"[WARN] Unable to find available lane on edge {entry_edge}")
             selected_lane = random.choice(candidate_lanes)
             is_ramp = "ramp" in selected_lane.id.lower()
 
@@ -161,10 +160,10 @@ class SlotBasedEnv(gym.Env):
             else:
                 target_fl = next((fl for fl in self.full_lanes if fl.start_lane_id == selected_lane.id), None)
                 if not target_fl or not target_fl.slots:
-                    print(f"[INFO] 未找到合适 FullLane 或无可用 slot：{selected_lane.id}")
+                    print(f"[INFO] No suitable FullLane found or no available slot: {selected_lane.id}")
                 slot = target_fl.slots[0]
                 if getattr(slot, "occupied", False):
-                    print(f"[INFO] slot {slot.id} 已被占用，跳过生成")
+                    print(f"[INFO] slot {slot.id} already occupied, skip generation")
                 vehicle = self.vehicle_generator.generate_vehicle(slot=slot, route=selected_route)
 
             if vehicle and vehicle.id not in self.rendered_vehicles:
@@ -206,9 +205,9 @@ class SlotBasedEnv(gym.Env):
 
                     self.rendered_vehicles.add(vehicle.id)
                     self.vehicle_list.append(vehicle)
-                    print(f"[ADD VEH] {vehicle.id} 添加成功，路线 {selected_route.id}")
+                    print(f"[ADD VEH] {vehicle.id} Added successfully, assigned route {selected_route.id}")
                 except Exception as e:
-                    print(f"[WARN] 添加 {vehicle.id} 失败：{e}")
+                    print(f"[WARN] Adding {vehicle.id} failed: {e}")
 
         self.time_step += 1
 
@@ -231,7 +230,7 @@ class SlotBasedEnv(gym.Env):
 
         obs_array = np.array(all_slot_data, dtype=np.float32)
 
-        # 判断是否是 multi-agent 模式
+        # Determine whether it is multi-agent mode
         if self.config.get("multi-agent", False):
             agent_obs = {}
             zones = self.config.get("agent_zones", {})
@@ -262,11 +261,11 @@ class SlotBasedEnv(gym.Env):
 if __name__ == "__main__":
     env = SlotBasedEnv(default_config)
     obs, info = env.reset()
-    print("初始状态：", {k: v.shape for k, v in obs.items()} if isinstance(obs, dict) else obs.shape)
+    print("Initial State", {k: v.shape for k, v in obs.items()} if isinstance(obs, dict) else obs.shape)
     max_steps = default_config["max_steps"]
     done = False
 
-    # Multi-Agent 模式测试
+    # Multi-Agent Mode Test
     if default_config.get("multi-agent", False):
         while not done:
             actions = {}

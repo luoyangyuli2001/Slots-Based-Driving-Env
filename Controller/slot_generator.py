@@ -7,11 +7,28 @@ from Config.config import default_config
 
 class SlotGenerator:
     def __init__(self, slot_length=None, slot_gap=None):
+        """
+        Initializes the SlotGenerator with slot size configuration.
+
+        Args:
+            slot_length (float, optional): Length of a single slot. Defaults to config value.
+            slot_gap (float, optional): Gap between consecutive slots. Defaults to config value.
+        """
         self.slot_length = slot_length if slot_length is not None else default_config["slot_length"]
         self.slot_gap = slot_gap if slot_gap is not None else default_config["slot_gap"]
-        self.global_index = 0
+        self.global_index = 0  # Global index to assign unique IDs to slots
 
     def interpolate_position_and_heading(self, shape, target_distance):
+        """
+        Interpolates position and heading along a given shape at the specified arc length.
+
+        Args:
+            shape (List[Tuple[float, float]]): Polyline shape of the lane.
+            target_distance (float): Arc distance along the shape.
+
+        Returns:
+            Tuple[Tuple[float, float], float]: Interpolated (x, y) position and heading in degrees.
+        """
         accumulated = 0.0
         for i in range(len(shape) - 1):
             x1, y1 = shape[i]
@@ -29,13 +46,22 @@ class SlotGenerator:
 
             accumulated += segment_length
 
-        # fallback (最后一个点)
+        # Fallback to the last segment's end
         x1, y1 = shape[-2]
         x2, y2 = shape[-1]
         heading = math.degrees(math.atan2(y2 - y1, x2 - x1))
         return shape[-1], heading
 
     def generate_slots_for_full_lane(self, full_lane):
+        """
+        Generate all possible slots along a given FullLane based on slot length and gap.
+
+        Args:
+            full_lane (FullLane): The FullLane instance to generate slots on.
+
+        Returns:
+            List[Slot]: List of generated Slot instances.
+        """
         slots = []
         total_length = full_lane.get_total_length()
         shape = full_lane.full_shape
@@ -67,11 +93,21 @@ class SlotGenerator:
 
             position += self.slot_length + self.slot_gap
 
+        # Ensure slots are ordered from front to back
         slots.sort(key=lambda s: s.position_start)
         full_lane.slots = slots
         return slots
 
     def generate_single_slot_on_full_lane(self, full_lane: FullLane) -> Slot:
+        """
+        Generate a single new slot at the start of a FullLane.
+
+        Args:
+            full_lane (FullLane): The FullLane instance to place the slot on.
+
+        Returns:
+            Slot: The newly created Slot instance.
+        """
         slot_id = f"slot_{self.global_index}"
         self.global_index += 1
         lane = full_lane.lanes[0]
@@ -95,6 +131,15 @@ class SlotGenerator:
         return slot
 
     def generate_slots_for_all_full_lanes(self, full_lanes):
+        """
+        Generate slots for all FullLane objects in the environment.
+
+        Args:
+            full_lanes (List[FullLane]): List of FullLane instances.
+
+        Returns:
+            List[Slot]: A combined list of all slots generated across all FullLanes.
+        """
         all_slots = []
         for full_lane in full_lanes:
             slots = self.generate_slots_for_full_lane(full_lane)

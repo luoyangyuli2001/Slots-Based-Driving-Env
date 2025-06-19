@@ -7,8 +7,8 @@ def generate_temp_cfg(
     cfg_path: str = os.path.join("Sim", "temp.sumocfg")
 ):
     """
-    生成 SUMO 配置文件 (.sumocfg)，用于启动仿真。
-    如果不传入参数，将使用默认的路径：
+    Generates a SUMO configuration file (.sumocfg) for starting the simulation.
+    If no parameters are passed, the default path will be used:
       - net_file: Sim/joined_segments.net.xml
       - cfg_path: Sim/temp.sumocfg
     """
@@ -25,4 +25,5 @@ def generate_temp_cfg(
                     <step-length value="0.1"/>
                 </time>
             </configuration>""")
-    print(f"[INFO] 生成临时 SUMO 配置文件：{cfg_path}")
+    print(f"[INFO] Generate SUMO Config File：{cfg_path}")
+

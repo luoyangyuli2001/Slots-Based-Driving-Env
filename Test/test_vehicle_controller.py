@@ -8,7 +8,7 @@ import traci
 import math
 from collections import defaultdict
 
-# 设置路径
+# Set path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.append(project_root)
@@ -22,17 +22,17 @@ from Controller.vehicle_generator import VehicleGenerator
 from Controller.merge_controller import MergeController
 from Controller.vehicle_controller import VehicleController
 
-# SUMO 配置路径
+# SUMO configuration
 SUMO_BINARY = "sumo-gui"
 NET_FILE = "Sim/test.net.xml"
 ROUTE_FILE = "Sim/test.rou.xml"
 CFG_FILE = "Sim/temp.sumocfg"
 
 if __name__ == "__main__":
-    print("[TEST] 启动 SUMO，并生成 Slot 与车辆")
+    print("[TEST] Starting SUMO and generating slots and vehicles")
     generate_temp_cfg()
 
-    # 加载 FullLane 与 Route
+    # Load FullLane and Route
     net_parser = NetXMLParser(NET_FILE)
     full_lanes = net_parser.build_full_lanes()
     lane_dict = net_parser.lane_dict
@@ -42,23 +42,23 @@ if __name__ == "__main__":
     route_groups = route_parser.get_route_groups()
     default_vtype = route_parser.get_default_vehicle_type()
 
-    # 启动 SUMO
+    # Start SUMO
     traci.start([SUMO_BINARY, "-c", CFG_FILE])
     traci.simulationStep()
 
-    # 初始化 Slot 系统
+    # Initialize slot system
     slot_generator = SlotGenerator()
     slot_generator.generate_slots_for_all_full_lanes(full_lanes)
     slot_controller = SlotController(slot_generator, full_lanes)
 
-    # 初始化 Vehicle 系统
+    # Initialize vehicle system
     vehicle_generator = VehicleGenerator(routes, default_vtype)
 
     rendered_slots = set()
     rendered_vehicles = set()
     vehicle_list = []
 
-    # 初始 slot 可视化
+    # Visualize initial slots
     for fl in full_lanes:
         for slot in fl.slots:
             if slot.center:
@@ -70,31 +70,30 @@ if __name__ == "__main__":
                 except:
                     pass
 
-    # 初始化车辆控制器
+    # Initialize vehicle controller
     vehicle_controller = VehicleController(vehicle_list, route_groups)
 
-    # 初始化合流控制器
+    # Initialize merge controller
     ramp_to_fulllane_map = {
         "on_ramp1": "e2_0",
         "-on_ramp1": "-e6_0"
     }
-
     merge_controller = MergeController(full_lanes, ramp_to_fulllane_map, safety_gap=5.0)
 
-    print("[TEST] 开始动态添加车辆并更新 slot")
+    print("[TEST] Start adding vehicles dynamically and updating slots")
     for step in range(5000):
         traci.simulationStep()
 
-        # 推进 slot 并获取移除项
+        # Advance slot controller and collect removed slots
         removed = slot_controller.step()
 
-        # === 车辆控制器实时更新车辆状态 ===
+        # Update all vehicle states
         vehicle_controller.step()
 
-        # === 合流控制器实时检查合流 ===
+        # Merge controller checks merging conditions
         merge_controller.step(vehicle_list)
 
-        # 更新现有 slot 坐标或添加新 slot
+        # Update existing slot positions or add new ones
         for fl in full_lanes:
             for slot in fl.slots:
                 if slot.center:
@@ -111,9 +110,9 @@ if __name__ == "__main__":
                             traci.poi.setParameter(slot.id, "imgHeight", "5")
                             rendered_slots.add(slot.id)
                         except Exception as e:
-                            print(f"[WARN] 新 slot {slot.id} 添加失败: {e}")
+                            print(f"[WARN] Failed to add new slot {slot.id}: {e}")
 
-        # 移除并补充 slot
+        # Remove disappeared slots
         for old_slot, full_lane in removed:
             try:
                 traci.poi.remove(old_slot.id)
@@ -121,26 +120,23 @@ if __name__ == "__main__":
             except:
                 pass
 
-        # 每 30 步添加一个车辆（仅示范）
+        # Add a new vehicle at step 30 (for demonstration)
         if step == 30:
             selected_route = vehicle_generator.select_random_route()
             entry_edge = selected_route.edges[0]
-
             candidate_lanes = [lane for lane in lane_dict.values() if lane.id.startswith(entry_edge + "_")]
             if not candidate_lanes:
-                print(f"[WARN] 无法在 edge {entry_edge} 上找到可用 lane")
+                print(f"[WARN] No available lane on edge {entry_edge}")
                 continue
-            
-            selected_lane = random.choice(candidate_lanes)
 
-            # 检查是否为 ramp
+            selected_lane = random.choice(candidate_lanes)
             is_ramp = "ramp" in selected_lane.id.lower()
 
             vehicle = None
             if is_ramp:
                 vehicle = vehicle_generator.generate_vehicle(slot=None, route=selected_route)
             else:
-                # 查找 full lane 并分配 slot
+                # Find corresponding FullLane
                 target_fl = None
                 for fl in full_lanes:
                     if fl.start_lane_id == selected_lane.id:
@@ -148,12 +144,12 @@ if __name__ == "__main__":
                         break
 
                 if not target_fl or not target_fl.slots:
-                    print(f"[INFO] 未找到合适 FullLane 或无可用 slot：{selected_lane.id}")
+                    print(f"[INFO] No valid FullLane or slot for {selected_lane.id}")
                     continue
 
                 slot = target_fl.slots[0]
                 if getattr(slot, "occupied", False):
-                    print(f"[INFO] slot {slot.id} 已被占用，跳过生成")
+                    print(f"[INFO] Slot {slot.id} already occupied, skipping")
                     continue
 
                 vehicle = vehicle_generator.generate_vehicle(slot=slot, route=selected_route)
@@ -170,21 +166,12 @@ if __name__ == "__main__":
                             departSpeed=str(slot.speed),
                             departLane=slot.lane.id.split("_")[-1]
                         )
-                        # 禁用变道
+                        # Disable lane change and auto acceleration
                         traci.vehicle.setLaneChangeMode(vehicle.id, 256)
-
-                        # 禁用自动加速
-                        # 默认（所有检查开启）-> [0 0 1 1 1 1 1] -> 速度模式 = 31
-                        # 大多数检查关闭（遗留）-> [0 0 0 0 0 0 0] -> 速度模式 = 0
-                        # 所有检查均关闭 -> [1 1 0 0 0 0 0] -> 速度模式 = 96
-                        # 禁用通行权检查 -> [0 1 1 0 1 1 1] -> 速度模式 = 55
-                        # 闯红灯 [0 0 0 0 1 1 1] = 7（也需要 setSpeed 或 slowDown）
-                        # 即使路口有人，也要闯红灯 [0 1 0 0 1 1 1] = 39（也需要 setSpeed 或 slowDown）
-
                         traci.vehicle.setSpeedMode(vehicle.id, 0)
                         traci.vehicle.setSpeed(vehicle.id, vehicle.speed)
 
-                        # === 使用 slot.heading 进行精确放置 ===
+                        # Use slot heading for precise placement
                         vehicle_length = vehicle.vehicle_type.length
                         heading_rad = math.radians(slot.heading)
                         x_center, y_center = slot.center
@@ -212,31 +199,34 @@ if __name__ == "__main__":
                     rendered_vehicles.add(vehicle.id)
                     vehicle_list.append(vehicle)
 
-                    print(f"[ADD VEH] {vehicle.id} 添加成功，路线 {selected_route.id}")
+                    print(f"[ADD VEH] {vehicle.id} added on route {selected_route.id}")
                 except Exception as e:
-                    print(f"[WARN] 添加 {vehicle.id} 失败：{e}")
+                    print(f"[WARN] Failed to add {vehicle.id}: {e}")
 
-        if len(vehicle_list) == 1:
-            target_vehicle = vehicle_list[0]
-
-        # # === 在第 200 步执行前进（动作1）===
+        # # === Execute forward slot movement (action 1) at step 200 ===
         # if step == 200 and target_vehicle and target_vehicle.current_slot:
-        #     print("[ACTION] 执行 slot 前进动作 1")
+        #     print("[ACTION] Execute slot forward action 1")
         #     vehicle_controller.execute_slot_action(target_vehicle.current_slot, 1)
 
-        # # === 在第 300 步执行后退（动作2）===
+        # # === Execute backward slot movement (action 2) at step 300 ===
         # if step == 300 and target_vehicle and target_vehicle.current_slot:
-        #     print("[ACTION] 执行 slot 后退动作 2")
+        #     print("[ACTION] Execute slot backward action 2")
         #     vehicle_controller.execute_slot_action(target_vehicle.current_slot, 2)
 
-        # === 在第 200 步执行向右变道（动作4）===
-        if step == 200 and target_vehicle and target_vehicle.current_slot:
-            print("[ACTION] 执行 slot 向右动作 4")
-            vehicle_controller.execute_slot_action(target_vehicle.current_slot, 4)
 
-        # === 在第 300 步执行向左变道（动作3）===
-        if step == 300 and target_vehicle and target_vehicle.current_slot:
-            print("[ACTION] 执行 slot 向左动作 3")
-            vehicle_controller.execute_slot_action(target_vehicle.current_slot, 3)
+        # === Execute lane change right at step 200 ===
+        if step == 200 and len(vehicle_list) >= 1:
+            target_vehicle = vehicle_list[0]
+            if target_vehicle.current_slot:
+                print("[ACTION] Execute lane change right (action 4)")
+                vehicle_controller.execute_slot_action(target_vehicle.current_slot, 4)
+
+        # === Execute lane change left at step 300 ===
+        if step == 300 and len(vehicle_list) >= 1:
+            target_vehicle = vehicle_list[0]
+            if target_vehicle.current_slot:
+                print("[ACTION] Execute lane change left (action 3)")
+                vehicle_controller.execute_slot_action(target_vehicle.current_slot, 3)
+
     traci.close()
-    print("[TEST] 测试完成")
+    print("[TEST] Test completed.")
