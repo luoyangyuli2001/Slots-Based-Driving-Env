@@ -25,9 +25,10 @@ class Slot:
         self.position_end = self.position_start + self.length
         self.center = (self.position_start + self.position_end) / 2
         self.heading = heading  # degree 方向角（相对于SUMO坐标系）
-        self.occupied = False
+        self.occupied = False #是否有车辆
         self.vehicle_id = vehicle_id
         self.full_lane = full_lane
+        self.busy = False #是否正在被某个动作占用
 
     def occupy(self, vehicle_id):
         self.occupied = True

@@ -3,12 +3,12 @@
 import math
 from Entity.slot import Slot
 from Entity.fulllane import FullLane
-from Config import config
+from Config.config import default_config
 
 class SlotGenerator:
     def __init__(self, slot_length=None, slot_gap=None):
-        self.slot_length = slot_length if slot_length is not None else config.SLOT_LENGTH
-        self.slot_gap = slot_gap if slot_gap is not None else config.SLOT_GAP
+        self.slot_length = slot_length if slot_length is not None else default_config["slot_length"]
+        self.slot_gap = slot_gap if slot_gap is not None else default_config["slot_gap"]
         self.global_index = 0
 
     def interpolate_position_and_heading(self, shape, target_distance):

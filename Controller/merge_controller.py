@@ -33,6 +33,7 @@ class MergeController:
                     if candidate_slot:
                         veh.current_slot = candidate_slot
                         candidate_slot.occupy(veh.id)
+                        candidate_slot.busy = True
                         print(f"[MERGE] 车辆 {veh.id} 成功绑定 slot {candidate_slot.id}")
 
     def _find_nearest_slot(self, full_lane, veh_pos):
