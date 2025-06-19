@@ -1,12 +1,10 @@
-# Controller/vehicle_controller.py
-
 import traci
 import math
 
 class VehicleController:
     def __init__(self, vehicle_list, route_groups):
         self.vehicle_list = vehicle_list
-        self.route_groups = route_groups  # 字典结构，如 {"main_forward": [...], ...}
+        self.route_groups = route_groups
 
     def step(self):
         to_remove = []
@@ -20,7 +18,6 @@ class VehicleController:
                     to_remove.append(vehicle)
                     continue
 
-                # 获取 SUMO 实时状态
                 front_x, front_y = traci.vehicle.getPosition(veh_id)
                 heading_deg = traci.vehicle.getAngle(veh_id)
                 heading_rad = math.radians(heading_deg)
@@ -32,13 +29,13 @@ class VehicleController:
                 vehicle.heading = heading_deg
                 vehicle.speed = speed
 
-                # ======= 离开检测与解绑 =======
+                # ======= 离开检测 =======
                 current_edge = traci.vehicle.getRoadID(veh_id)
                 if slot and "off_ramp" in current_edge:
                     vehicle.current_slot = None
                     print(f"[INFO] 车辆 {veh_id} 进入 {current_edge}，解绑 Slot")
 
-                # ======= Reroute 检测逻辑 =======
+                # ======= Reroute =======
                 route_id = traci.vehicle.getRouteID(veh_id)
                 if route_id.startswith("route_"):
                     parts = route_id.split("_")
@@ -56,23 +53,21 @@ class VehicleController:
                                     pos_on_lane = traci.vehicle.getLanePosition(veh_id)
                                     lane_id = traci.vehicle.getLaneID(veh_id)
                                     lane_length = traci.lane.getLength(lane_id)
-                                    distance_to_end = lane_length - pos_on_lane
-
-                                    if distance_to_end < 50:
+                                    if lane_length - pos_on_lane < 50:
                                         lane_index = int(lane_id.split("_")[-1])
                                         if lane_index != 0:
                                             new_route_id = route_list[current_index + 1]
                                             traci.vehicle.setRouteID(veh_id, new_route_id)
                                             print(f"[REROUTE] 车辆 {veh_id} 从 {route_id} -> {new_route_id}")
 
-                # ======= 动作完成检查：释放 previous_slot =======
+                # ======= 动作完成检测 =======
                 if vehicle.previous_slot:
                     new_slot = vehicle.current_slot
                     dx = new_slot.center[0] - center_x
                     dy = new_slot.center[1] - center_y
                     new_slot_heading_rad = math.radians(new_slot.heading)
-                    dist = dx * math.cos(new_slot_heading_rad) + dy * math.sin(new_slot_heading_rad)
-                    if abs(dist) < 1:  # 阈值可调
+                    dist = abs(dx * math.cos(new_slot_heading_rad) + dy * math.sin(new_slot_heading_rad))
+                    if dist < 1.0:
                         vehicle.previous_slot.release()
                         print(f"[ACTION] 车辆 {vehicle.id} 动作完成，释放 slot {vehicle.previous_slot.id}")
                         vehicle.previous_slot = None
@@ -87,13 +82,9 @@ class VehicleController:
 
                     tolerance = 0.1
                     max_adjust = 2.0
-
                     if abs(delta_along) > tolerance:
-                        k_p = 0.8
-                        correction = k_p * delta_along
-                        correction = max(-max_adjust, min(max_adjust, correction))
-                        target_speed = slot.speed + correction
-                        target_speed = max(0, min(target_speed, vehicle.vehicle_type.max_speed))
+                        correction = max(-max_adjust, min(max_adjust, 0.8 * delta_along))
+                        target_speed = max(0, min(slot.speed + correction, vehicle.vehicle_type.max_speed))
                         traci.vehicle.setSpeed(veh_id, target_speed)
                     else:
                         traci.vehicle.setSpeed(veh_id, slot.speed)
@@ -121,13 +112,6 @@ class VehicleController:
         self.perform_action(vehicle, action_id)
 
     def perform_action(self, vehicle, action_id: int):
-        """
-        车辆动作执行函数：
-        0: 保持当前 slot（默认）
-        1: 前进至前一个 slot
-        2: 后退至后一个 slot
-        """
-
         slot = vehicle.current_slot
         if not slot or not hasattr(slot, "full_lane") or slot.full_lane is None:
             print(f"[SKIP] 车辆 {vehicle.id} 无绑定 slot，跳过动作 {action_id}")
@@ -135,26 +119,66 @@ class VehicleController:
 
         full_lane = slot.full_lane
         slots = full_lane.slots
-
         try:
             current_pos = next(i for i, s in enumerate(slots) if s.id == slot.id)
         except StopIteration:
-            print(f"[ERROR] slot {slot.id} 未在 full_lane 中找到，跳过动作")
+            print(f"[ERROR] slot {slot.id} 未在 full_lane 中找到")
             return
 
-        if action_id == 1 and current_pos + 1 < len(slots):
+        if action_id == 1 and current_pos + 1 < len(slots):  # 前进
             new_slot = slots[current_pos + 1]
-            vehicle.previous_slot = slot  # 不立即释放旧 slot
+            vehicle.previous_slot = slot
             vehicle.current_slot = new_slot
             new_slot.occupy(vehicle.id)
-            print(f"[ACTION] 车辆 {vehicle.id} 前进至 slot {new_slot.id}，等待动作完成")
+            print(f"[ACTION] 车辆 {vehicle.id} 前进至 slot {new_slot.id}")
 
-        elif action_id == 2 and current_pos - 1 >= 0:
+        elif action_id == 2 and current_pos - 1 >= 0:  # 后退
             new_slot = slots[current_pos - 1]
             vehicle.previous_slot = slot
             vehicle.current_slot = new_slot
             new_slot.occupy(vehicle.id)
-            print(f"[ACTION] 车辆 {vehicle.id} 后退至 slot {new_slot.id}，等待动作完成")
+            print(f"[ACTION] 车辆 {vehicle.id} 后退至 slot {new_slot.id}")
 
+        elif action_id in [3, 4]:  # 变道
+            direction = -1 if action_id == 3 else 1  # -1: 左变道, +1: 右变道
+            current_x = slot.center[0]
+
+            candidate_full_lanes = []
+            for start_x, end_x, neighbor, neighbor_direction in full_lane.neighbor_full_lanes:
+                if neighbor_direction == direction and start_x <= current_x <= end_x:
+                    candidate_full_lanes.append(neighbor)
+
+            if not candidate_full_lanes:
+                print(f"[LANE CHANGE] 车辆 {vehicle.id} 无邻接 FullLane 可用于 {'左' if direction == -1 else '右'}变道")
+                return
+
+            best_slot = None
+            for neighbor_full_lane in candidate_full_lanes:
+                for s in neighbor_full_lane.slots:
+                    dx = s.center[0] - slot.center[0]
+                    dy = s.center[1] - slot.center[1]
+                    dist = math.hypot(dx, dy)
+                    if dist < 10 and not s.occupied:
+                        idx = neighbor_full_lane.slots.index(s)
+                        prev_free = idx == 0 or not neighbor_full_lane.slots[idx - 1].occupied
+                        next_free = idx == len(neighbor_full_lane.slots) - 1 or not neighbor_full_lane.slots[idx + 1].occupied
+                        if prev_free and next_free:
+                            best_slot = s
+                            break
+                if best_slot:
+                    break
+
+            if best_slot:
+                vehicle.previous_slot = slot
+                vehicle.current_slot = best_slot
+                best_slot.occupy(vehicle.id)
+
+                # === 使用 traci 反查 best_slot 所属车道 ===
+                lane_result = traci.simulation.convertRoad(*best_slot.center)
+                traci.vehicle.changeLane(vehicle.id, lane_result[2], 50)
+                print(f"[LANE CHANGE] 车辆 {vehicle.id} 向 {'左' if direction == -1 else '右'} 变道至 slot {best_slot.id}")
+
+            else:
+                print(f"[LANE CHANGE] 车辆 {vehicle.id} 未找到安全可用 slot，跳过变道")
         else:
-            print(f"[ACTION] 未知或非法动作 {action_id}，当前仅支持 0-2")
+            print(f"[ACTION] 未知或非法动作 {action_id}，仅支持 0-4")

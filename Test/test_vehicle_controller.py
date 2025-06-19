@@ -219,15 +219,24 @@ if __name__ == "__main__":
         if len(vehicle_list) == 1:
             target_vehicle = vehicle_list[0]
 
-        # === 在第 100 步执行前进（动作1）===
+        # # === 在第 200 步执行前进（动作1）===
+        # if step == 200 and target_vehicle and target_vehicle.current_slot:
+        #     print("[ACTION] 执行 slot 前进动作 1")
+        #     vehicle_controller.execute_slot_action(target_vehicle.current_slot, 1)
+
+        # # === 在第 300 步执行后退（动作2）===
+        # if step == 300 and target_vehicle and target_vehicle.current_slot:
+        #     print("[ACTION] 执行 slot 后退动作 2")
+        #     vehicle_controller.execute_slot_action(target_vehicle.current_slot, 2)
+
+        # === 在第 200 步执行向右变道（动作4）===
         if step == 200 and target_vehicle and target_vehicle.current_slot:
-            print("[ACTION] 执行 slot 前进动作 1")
-            vehicle_controller.execute_slot_action(target_vehicle.current_slot, 1)
+            print("[ACTION] 执行 slot 向右动作 4")
+            vehicle_controller.execute_slot_action(target_vehicle.current_slot, 4)
 
-        # === 在第 200 步执行后退（动作2）===
+        # === 在第 300 步执行向左变道（动作3）===
         if step == 300 and target_vehicle and target_vehicle.current_slot:
-            print("[ACTION] 执行 slot 后退动作 2")
-            vehicle_controller.execute_slot_action(target_vehicle.current_slot, 2)
-
+            print("[ACTION] 执行 slot 向左动作 3")
+            vehicle_controller.execute_slot_action(target_vehicle.current_slot, 3)
     traci.close()
     print("[TEST] 测试完成")

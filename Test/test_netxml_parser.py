@@ -90,4 +90,5 @@ if __name__ == "__main__":
 
     print(f"构建了 {len(full_lanes)} 条 FullLane：")
     for fl in full_lanes:
-        print(fl)
+        print("Full Lane: ", fl.start_lane_id)
+        print("Neighbour: ", fl.neighbor_full_lanes)
